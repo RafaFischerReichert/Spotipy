@@ -16,7 +16,7 @@ This tool helps you create a Spotify playlist based on your preferences.
 2. Configure the playlist:
    - Open `PlaylistCreator.py`
    - Modify the last two lines to set your target playlist ID:
-     ```python
+     ```
      playlist_id = "your_playlist_id_here"
      ```
    - You can find a playlist ID in its Spotify URL: 
