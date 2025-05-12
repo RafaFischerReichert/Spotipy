@@ -44,7 +44,26 @@ This tool displays the genres associated with a Spotify artist.
    - Run the script
    - The console will display all genres associated with the artist
 
+## Genre Lister
+This tool analyzes a playlist and lists all unique genres found in its tracks.
+
+1. Configure the playlist:
+   - Open `Genre Lister.py`
+   - Modify the playlist ID in the main section:
+     ```
+     playlist_id = "your_playlist_id_here"
+     ```
+   - You can find a playlist ID in its Spotify URL:
+     `https://open.spotify.com/playlist/THIS_IS_THE_PLAYLIST_ID`
+
+2. Run the lister:
+   - Execute `Genre Lister.py`
+   - The script will process each track in the playlist
+   - It will display progress as it analyzes the tracks
+   - Finally, it will show a sorted list of all unique genres found
+   - The total count of unique genres will be displayed
+
 ## Troubleshooting
 - If you encounter authentication errors, ensure your Client ID and Secret are correct
 - Make sure you have the necessary permissions on your Spotify account
-- Verify that the playlist ID exists and you have access to it 
+- Verify that the playlist ID exists and you have access to it
