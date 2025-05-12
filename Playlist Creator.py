@@ -130,7 +130,7 @@ def create_genre_playlists(playlist_id: str) -> None:
         if len(track_ids) < 100:  # Skip genres with too few tracks
             continue
             
-        playlist_name: str = f"{genre.title()} Vibes"
+        playlist_name: str = f"{genre.title()}"
         try:
             # Check if playlist already exists
             if playlist_name in existing_playlists:
@@ -180,5 +180,5 @@ def create_genre_playlists(playlist_id: str) -> None:
             continue
 
 if __name__ == "__main__":
-    playlist_id: str = '4GQhO4MTpS8iDanLQ4vcKW'
+    playlist_id: str = 'your-playlist-id'
     create_genre_playlists(playlist_id)
