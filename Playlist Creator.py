@@ -85,7 +85,7 @@ def create_genre_playlists(playlist_id: str) -> None:
         for genre in genres:
             genre_tracks[genre].add(track_id)
         
-        time.sleep(0.2)  # Increased from 0.1 to 0.2 seconds
+        time.sleep(0.2)
     
     # Get user's playlists to check for existing ones
     user_id: str = sp.current_user()['id']
