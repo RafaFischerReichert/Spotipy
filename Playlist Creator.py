@@ -16,25 +16,38 @@ sp: spotipy.Spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
 def get_playlist_tracks(playlist_id: str) -> List[Dict[str, Any]]:
     """Get all tracks from a playlist, handling pagination"""
     tracks: List[Dict[str, Any]] = []
-    results: Dict[str, Any] = sp.playlist_tracks(playlist_id)
-    tracks.extend(results['items'])
+    max_retries: int = 5
+    base_delay: int = 1
     
-    while results['next']:
-        results = sp.next(results)
-        tracks.extend(results['items'])
-        time.sleep(0.1)  # Rate limiting
-    
-    return tracks
+    for attempt in range(max_retries):
+        try:
+            results: Dict[str, Any] = sp.playlist_tracks(playlist_id, timeout=10)
+            tracks.extend(results['items'])
+            
+            while results['next']:
+                results = sp.next(results, timeout=10)
+                tracks.extend(results['items'])
+                time.sleep(0.1)  # Rate limiting
+            
+            return tracks
+        except Exception as e:
+            if ('rate' in str(e).lower() or 'timeout' in str(e).lower()) and attempt < max_retries - 1:
+                delay: int = base_delay * (2 ** attempt)
+                print(f"Request failed ({str(e)}), waiting {delay} seconds...")
+                time.sleep(delay)
+            else:
+                raise
 
 def get_artist_with_retry(artist_id: str, max_retries: int = 3, base_delay: int = 1) -> Dict[str, Any]:
     """Get artist data with exponential backoff retry logic"""
     for attempt in range(max_retries):
         try:
-            return sp.artist(artist_id)
+            # Increase timeout to 10 seconds
+            return sp.artist(artist_id, timeout=10)
         except Exception as e:
-            if 'rate' in str(e).lower() and attempt < max_retries - 1:
+            if ('rate' in str(e).lower() or 'timeout' in str(e).lower()) and attempt < max_retries - 1:
                 delay: int = base_delay * (2 ** attempt)  # Exponential backoff
-                print(f"Rate limited, waiting {delay} seconds...")
+                print(f"Request failed ({str(e)}), waiting {delay} seconds...")
                 time.sleep(delay)
             else:
                 raise
