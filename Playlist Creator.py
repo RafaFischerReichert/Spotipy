@@ -72,6 +72,19 @@ def get_track_genres(track: Dict[str, Any], artist_cache: Optional[Dict[str, Lis
     
     return genres
 
+def normalize_genre(genre: str) -> str:
+    """Normalize genre names to combine similar genres"""
+    genre = genre.lower()
+    if genre in ['industrial', 'industrial rock']:
+        return 'industrial metal'
+    if genre in ['hip hop', 'rap', 'west coast hip hop']:
+        return 'rap and hip hop'
+    if genre in ['indie folk', 'indie']:
+        return 'indie and alternative'
+    if genre == 'brazilian hip hop':
+        return ['brazilian hip hop', 'rap and hip hop']
+    return genre
+
 def create_genre_playlists(playlist_id: str) -> None:
     # Get all tracks from the source playlist
     tracks: List[Dict[str, Any]] = get_playlist_tracks(playlist_id)
@@ -93,9 +106,10 @@ def create_genre_playlists(playlist_id: str) -> None:
         track_id: str = track['track']['id']
         genres: List[str] = get_track_genres(track, artist_cache)
         
-        # Add track to each of its genres
+        # Add track to each of its normalized genres
         for genre in genres:
-            genre_tracks[genre].add(track_id)
+            normalized_genre = normalize_genre(genre)
+            genre_tracks[normalized_genre].add(track_id)
         
         time.sleep(0.2)
     
@@ -113,7 +127,7 @@ def create_genre_playlists(playlist_id: str) -> None:
         time.sleep(0.2)
     
     for genre, track_ids in genre_tracks.items():
-        if len(track_ids) < 30:  # Skip genres with too few tracks
+        if len(track_ids) < 100:  # Skip genres with too few tracks
             continue
             
         playlist_name: str = f"{genre.title()} Vibes"
