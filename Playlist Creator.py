@@ -2,7 +2,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from collections import defaultdict
 import time
-from typing import Dict, List, Set, Optional, Any
+from typing import Dict, List, Set, Optional, Any, Union
 from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 
 # Initialize Spotify client
@@ -72,18 +72,65 @@ def get_track_genres(track: Dict[str, Any], artist_cache: Optional[Dict[str, Lis
     
     return genres
 
-def normalize_genre(genre: str) -> str:
+def normalize_genre(genre: str) -> List[str]:
     """Normalize genre names to combine similar genres"""
     genre = genre.lower()
     if genre in ['industrial', 'industrial rock']:
-        return 'industrial metal'
-    if genre in ['hip hop', 'rap', 'west coast hip hop']:
-        return 'rap and hip hop'
-    if genre in ['indie folk', 'indie']:
-        return 'indie and alternative'
-    if genre == 'brazilian hip hop':
+        return ['industrial metal']
+    if genre == 'meme rap':
+        return ['comedy']
+    if genre in ['hip hop', 'rap', 'west coast hip hop', 'cloud rap', 'dark trap', 'gangster rap', 'memphis rap']:
+        return ['rap and hip hop']
+    if genre == 'indie folk':
+        return ['folk', 'indie and alternative']
+    if genre in ['indie', 'indie rock', 'alternative dance', 'alternative r&b', 'alternative rock', 'christian alternative rock']:
+        return ['indie and alternative']
+    if genre in ['brazilian hip hop', 'brazilian trap']:
         return ['brazilian hip hop', 'rap and hip hop']
-    return genre
+    if genre in ['anime', 'anime rap']:
+        return ['anime', 'japanese music']
+    if genre == 'brazilian rock':
+        return ['brazilian rock', 'rock']
+    if genre == 'celtic':
+        return ['celtic rock']
+    if genre in ['electro', 'electronica', 'edm']:
+        return ['electronic']
+    if genre in ['glam metal', 'glam rock']:
+        return ['glam']
+    if genre == 'hardcore punk':
+        return ['hardcore punk', 'hardcore']
+    if genre == 'bass music':
+        return ['drum and bass']
+    if genre == 'emo rap':
+        return ['emo', 'emo rap', 'rap and hip hop']
+    if genre == 'emo pop':
+        return ['emo', 'emo pop']
+    if genre == 'emocore':
+        return ['emo', 'emocore']
+    if genre == 'folk rock':
+        return ['folk', 'folk rock']
+    if genre == 'folk metal':
+        return ['folk', 'folk metal']
+    if genre in ['kayokyoku', 'j-pop', 'shibuya-kei']:
+        return ['j-pop', 'japanese music']
+    if genre == 'j-rock':
+        return ['j-rock', 'japanese music']
+    if genre == 'japanese indie':
+        return ['japanese indie', 'japanese music', 'indie and alternative']
+    if genre == 'j-rap':
+        return ['j-rap', 'rap and hip hop', 'japanese music']
+    if genre == 'vocaloid':
+        return ['japanese music', 'vocaloid']
+    if genre == 'medieval metal':
+        return ['medieval']
+    if genre == 'traditional country':
+        return ['country']
+    if genre == 'sertanejo tradicional':
+        return ['sertanejo']
+    if genre == 'nova mpb':
+        return ['mpb', 'nova mpb']
+        
+    return [genre]
 
 def create_genre_playlists(playlist_id: str) -> None:
     # Get all tracks from the source playlist
@@ -106,10 +153,14 @@ def create_genre_playlists(playlist_id: str) -> None:
         track_id: str = track['track']['id']
         genres: List[str] = get_track_genres(track, artist_cache)
         
-        # Add track to each of its normalized genres
+        # Normalize genres and add track to each unique normalized genre
+        normalized_genres: Set[str] = set()
         for genre in genres:
-            normalized_genre = normalize_genre(genre)
-            genre_tracks[normalized_genre].add(track_id)
+            normalized_genres.update(normalize_genre(genre))
+        
+        # Add track to each unique normalized genre
+        for genre in normalized_genres:
+            genre_tracks[genre].add(track_id)
         
         time.sleep(0.2)
     
@@ -180,5 +231,5 @@ def create_genre_playlists(playlist_id: str) -> None:
             continue
 
 if __name__ == "__main__":
-    playlist_id: str = 'your-playlist-id'
+    playlist_id: str = 'your-playlist-id-here'
     create_genre_playlists(playlist_id)
