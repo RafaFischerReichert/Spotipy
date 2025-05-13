@@ -75,62 +75,65 @@ def get_track_genres(track: Dict[str, Any], artist_cache: Optional[Dict[str, Lis
 def normalize_genre(genre: str) -> List[str]:
     """Normalize genre names to combine similar genres"""
     genre = genre.lower()
-    if genre in ['industrial', 'industrial rock']:
-        return ['industrial metal']
-    if genre == 'meme rap':
-        return ['comedy']
-    if genre in ['hip hop', 'rap', 'west coast hip hop', 'cloud rap', 'dark trap', 'gangster rap', 'memphis rap']:
-        return ['rap and hip hop']
-    if genre == 'indie folk':
-        return ['folk', 'indie and alternative']
-    if genre in ['indie', 'indie rock', 'alternative dance', 'alternative r&b', 'alternative rock', 'christian alternative rock']:
-        return ['indie and alternative']
-    if genre in ['brazilian hip hop', 'brazilian trap']:
-        return ['brazilian hip hop', 'rap and hip hop']
-    if genre in ['anime', 'anime rap']:
-        return ['anime', 'japanese music']
-    if genre == 'brazilian rock':
-        return ['brazilian rock', 'rock']
-    if genre == 'celtic':
-        return ['celtic rock']
-    if genre in ['electro', 'electronica', 'edm']:
-        return ['electronic']
-    if genre in ['glam metal', 'glam rock']:
-        return ['glam']
-    if genre == 'hardcore punk':
-        return ['hardcore punk', 'hardcore']
-    if genre == 'bass music':
-        return ['drum and bass']
-    if genre == 'emo rap':
-        return ['emo', 'emo rap', 'rap and hip hop']
-    if genre == 'emo pop':
-        return ['emo', 'emo pop']
-    if genre == 'emocore':
-        return ['emo', 'emocore']
-    if genre == 'folk rock':
-        return ['folk', 'folk rock']
-    if genre == 'folk metal':
-        return ['folk', 'folk metal']
-    if genre in ['kayokyoku', 'j-pop', 'shibuya-kei']:
-        return ['j-pop', 'japanese music']
-    if genre == 'j-rock':
-        return ['j-rock', 'japanese music']
-    if genre == 'japanese indie':
-        return ['japanese indie', 'japanese music', 'indie and alternative']
-    if genre == 'j-rap':
-        return ['j-rap', 'rap and hip hop', 'japanese music']
-    if genre == 'vocaloid':
-        return ['japanese music', 'vocaloid']
-    if genre == 'medieval metal':
-        return ['medieval']
-    if genre == 'traditional country':
-        return ['country']
-    if genre == 'sertanejo tradicional':
-        return ['sertanejo']
-    if genre == 'nova mpb':
-        return ['mpb', 'nova mpb']
+    result = []
+    
+    # Check if genre contains overarching genre names and add it as a separate genre
+    if 'metal' in genre:
+        result.extend(['metal'])
+    if 'emo' in genre:
+        result.extend(['emo'])
+    if 'rap' in genre or 'hip hop' in genre:
+        result.extend(['rap and hip hop'])
+    if 'folk' in genre:
+        result.extend(['folk'])
+    if 'industrial' in genre:
+        result.extend(['industrial'])
+    if 'alternative' in genre or 'indie' in genre:
+        result.extend(['indie and alternative'])
+    if 'rock' in genre:
+        result.extend(['rock'])
+    if 'glam' in genre:
+        result.extend(['glam'])
+    if 'country' in genre:
+        result.extend(['country'])
+    if 'sertanejo' in genre:
+        result.extend(['sertanejo'])
+    if 'mpb' in genre:
+        result.extend(['mpb'])
+    if 'blues' in genre or 'r&b' in genre:
+        result.extend(['blues'])
         
-    return [genre]
+    
+    if genre == 'meme rap':
+        result.extend(['comedy'])
+    elif genre in ['brazilian hip hop', 'brazilian trap']:
+        result.extend(['brazilian hip hop', 'rap and hip hop'])
+    elif genre in ['anime', 'anime rap']:
+        result.extend(['anime', 'japanese music'])
+    elif genre == 'celtic':
+        result.extend(['celtic rock'])
+    elif genre in ['electro', 'electronica', 'edm']:
+        result.extend(['electronic'])
+    elif genre == 'hardcore punk':
+        result.extend(['hardcore punk', 'hardcore'])
+    elif genre == 'bass music':
+        result.extend(['drum and bass'])
+    elif genre in ['kayokyoku', 'j-pop', 'shibuya-kei']:
+        result.extend(['j-pop', 'japanese music'])
+    elif genre == 'j-rock':
+        result.extend(['j-rock', 'japanese music'])
+    elif genre == 'japanese indie':
+        result.extend(['japanese indie', 'japanese music', 'indie and alternative'])
+    elif genre == 'j-rap':
+        result.extend(['j-rap', 'rap and hip hop', 'japanese music'])
+    elif genre == 'vocaloid':
+        result.extend(['japanese music', 'vocaloid'])
+    elif genre == 'medieval metal':
+        result.extend(['medieval'])
+    else:
+        result.append(genre)
+    
+    return result
 
 def create_genre_playlists(playlist_id: str) -> None:
     # Get all tracks from the source playlist
