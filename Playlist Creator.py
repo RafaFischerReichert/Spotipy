@@ -3,7 +3,7 @@ from spotipy.oauth2 import SpotifyOAuth
 from collections import defaultdict
 import time
 from typing import Dict, List, Set, Optional, Any, Union
-from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
+from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, PLAYLIST_ID
 
 # Initialize Spotify client
 sp: spotipy.Spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
@@ -234,5 +234,4 @@ def create_genre_playlists(playlist_id: str) -> None:
             continue
 
 if __name__ == "__main__":
-    playlist_id: str = 'your-playlist-id-here'
-    create_genre_playlists(playlist_id)
+    create_genre_playlists(PLAYLIST_ID)

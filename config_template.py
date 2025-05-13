@@ -5,6 +5,9 @@
 # 3. Copy your credentials here
 # 4. Change the file name to config.py
 
-CLIENT_ID = 'your_client_id_here'
-CLIENT_SECRET = 'your_client_secret_here'
-REDIRECT_URI = 'https://oauth.pstmn.io/v1/callback'  # You can change this to your preferred redirect URI 
+CLIENT_ID = 'your-client-id-here'
+CLIENT_SECRET = 'your-client-secret-here'
+REDIRECT_URI = 'your-redirect-uri-here'
+
+# Source playlist ID to analyze
+PLAYLIST_ID = 'your-playlist-id-here' 
