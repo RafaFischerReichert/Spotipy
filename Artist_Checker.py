@@ -39,5 +39,5 @@ def print_artist_genres(artist_id: str):
 
 if __name__ == "__main__":
     # Example usage - replace with your artist ID
-    artist_id = "0OdUWJ0sBjDrqHygGUXeCF"  # Example: Coldplay
+    artist_id = "57ekbx9PSS4ORs5wTZMSYp"
     print_artist_genres(artist_id)

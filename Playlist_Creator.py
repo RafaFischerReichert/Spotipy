@@ -78,7 +78,7 @@ def normalize_genre(genre: str) -> List[str]:
     result = []
     
     # Check if genre contains overarching genre names and add it as a separate genre
-    if 'metal' in genre:
+    if 'metal' in genre or 'grunge' in genre:
         result.extend(['metal'])
     if 'emo' in genre:
         result.extend(['emo'])

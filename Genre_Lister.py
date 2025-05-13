@@ -99,6 +99,5 @@ def list_playlist_genres(playlist_id: str) -> None:
     print(f"\nTotal unique genres: {len(unique_genres)}")
 
 if __name__ == "__main__":
-    # Replace with your playlist ID
-    playlist_id: str = "your_playlist_id_here"
-    list_playlist_genres(playlist_id)
+    from config import PLAYLIST_ID
+    list_playlist_genres(PLAYLIST_ID)
