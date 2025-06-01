@@ -2,6 +2,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 import time
+from Playlist_Tools import get_artist_with_retry, sp
 
 # Initialize Spotify client
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
@@ -10,19 +11,6 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     redirect_uri=REDIRECT_URI,
     scope='user-library-read'  # Only need read access for this
 ))
-
-def get_artist_with_retry(artist_id: str, max_retries: int = 3, base_delay: int = 1):
-    """Get artist data with exponential backoff retry logic"""
-    for attempt in range(max_retries):
-        try:
-            return sp.artist(artist_id)
-        except Exception as e:
-            if 'rate' in str(e).lower() and attempt < max_retries - 1:
-                delay = base_delay * (2 ** attempt)  # Exponential backoff
-                print(f"Rate limited, waiting {delay} seconds...")
-                time.sleep(delay)
-            else:
-                raise
 
 def print_artist_genres(artist_id: str):
     """Print all genres for a given artist"""
@@ -39,5 +27,5 @@ def print_artist_genres(artist_id: str):
 
 if __name__ == "__main__":
     # Example usage - replace with your artist ID
-    artist_id = "57ekbx9PSS4ORs5wTZMSYp"
+    artist_id = "3rIZMv9rysU7JkLzEaC5Jp"
     print_artist_genres(artist_id)

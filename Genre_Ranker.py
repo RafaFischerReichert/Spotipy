@@ -4,17 +4,12 @@ from collections import defaultdict
 import time
 from typing import Dict, List, Set, Optional, Any
 from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
-
-# Initialize Spotify client
-sp: spotipy.Spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
-    client_id=CLIENT_ID,
-    client_secret=CLIENT_SECRET,
-    redirect_uri=REDIRECT_URI,
-    scope='user-library-read'
-))
-
-# Import the helper functions from Genre Lister
-from Genre_Lister import get_playlist_tracks, get_artist_with_retry, get_track_genres
+from Playlist_Tools import (
+    get_playlist_tracks,
+    get_artist_with_retry,
+    get_track_genres,
+    sp
+)
 
 def rank_playlist_genres(playlist_id: str) -> None:
     """List genres found in a playlist, ranked by frequency"""
