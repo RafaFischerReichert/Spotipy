@@ -1,6 +1,5 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-from collections import defaultdict
 import time
 from typing import Dict, List, Set, Optional, Any, Union
 from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
@@ -100,6 +99,9 @@ def normalize_genre(genre: str) -> List[str]:
     genre = genre.lower()
     result = set()  # Using set to automatically handle duplicates
     
+    # Always add the original genre first
+    result.add(genre)
+    
     # Define genre mappings
     genre_mappings = {
         'metal': ['metal', 'grunge', 'djent'],
@@ -121,7 +123,6 @@ def normalize_genre(genre: str) -> List[str]:
     for normalized, keywords in genre_mappings.items():
         if any(keyword in genre for keyword in keywords):
             result.add(normalized)
-        result.add(genre)
     
     # Special cases
     special_cases = {
@@ -154,9 +155,11 @@ def normalize_genre(genre: str) -> List[str]:
             elif normalized == 'vocaloid':
                 result.add('Japanese Music')
     
-    # If no mappings found, add the original genre
-    if not result:
-        result.add(genre)
+    # If no mappings found, we don't need to add the original genre again since we added it at the start
+    
+    # Add combined tag for Japanese music
+    if 'japanese music' in result:
+        result.add('Anime + Japanese Music')
     
     return list(result)
 

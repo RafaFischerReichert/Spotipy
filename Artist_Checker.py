@@ -1,7 +1,6 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
-import time
 from Playlist_Tools import get_artist_with_retry, sp
 
 # Initialize Spotify client

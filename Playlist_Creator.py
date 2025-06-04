@@ -2,11 +2,10 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from collections import defaultdict
 import time
-from typing import Dict, List, Set, Optional, Any, Union
+from typing import Dict, List, Set, Any
 from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, PLAYLIST_ID
 from Playlist_Tools import (
     get_playlist_tracks,
-    get_artist_with_retry,
     get_track_genres,
     normalize_genre,
     get_existing_playlists,
