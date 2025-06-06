@@ -2,6 +2,8 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from collections import defaultdict
 import time
+import json
+import os
 from typing import Dict, List, Set, Any
 from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, PLAYLIST_ID
 from Playlist_Tools import (
@@ -21,6 +23,25 @@ sp: spotipy.Spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
     scope='playlist-modify-public playlist-modify-private user-library-read'
 ))
 
+# Cache file path
+CACHE_FILE = "track_genre_cache.json"
+
+def load_track_cache() -> Dict[str, List[str]]:
+    """Load the track genre cache from file if it exists."""
+    if os.path.exists(CACHE_FILE):
+        try:
+            with open(CACHE_FILE, 'r') as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            print("Cache file corrupted, starting with empty cache")
+            return {}
+    return {}
+
+def save_track_cache(cache: Dict[str, List[str]]) -> None:
+    """Save the track genre cache to file."""
+    with open(CACHE_FILE, 'w') as f:
+        json.dump(cache, f)
+
 def create_genre_playlists(playlist_id: str) -> None:
     # Get all tracks from the source playlist
     tracks: List[Dict[str, Any]] = get_playlist_tracks(playlist_id)
@@ -31,6 +52,11 @@ def create_genre_playlists(playlist_id: str) -> None:
     # Cache for artist data to reduce API calls
     artist_cache: Dict[str, List[str]] = {}
     
+    # Load track genre cache
+    track_cache: Dict[str, List[str]] = load_track_cache()
+    cache_hits = 0
+    cache_misses = 0
+    
     # Process tracks in batches to avoid rate limiting
     for i, track in enumerate(tracks):
         if i % 50 == 0:  
@@ -40,7 +66,15 @@ def create_genre_playlists(playlist_id: str) -> None:
             continue
             
         track_id: str = track['track']['id']
-        genres: List[str] = get_track_genres(track, artist_cache)
+        
+        # Check if track is in cache
+        if track_id in track_cache:
+            genres = track_cache[track_id]
+            cache_hits += 1
+        else:
+            genres = get_track_genres(track, artist_cache)
+            track_cache[track_id] = genres
+            cache_misses += 1
         
         # Normalize genres and add track to each unique normalized genre
         normalized_genres: Set[str] = set()
@@ -51,7 +85,16 @@ def create_genre_playlists(playlist_id: str) -> None:
         for genre in normalized_genres:
             genre_tracks[genre].add(track_id)
         
+        # Save cache periodically (every 100 tracks)
+        if (i + 1) % 100 == 0:
+            save_track_cache(track_cache)
+            print(f"Cache stats: {cache_hits} hits, {cache_misses} misses")
+        
         time.sleep(0.2)
+    
+    # Save final cache state
+    save_track_cache(track_cache)
+    print(f"Final cache stats: {cache_hits} hits, {cache_misses} misses")
     
     # Get user's playlists to check for existing ones
     existing_playlists: Dict[str, str] = get_existing_playlists()

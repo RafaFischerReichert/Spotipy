@@ -78,6 +78,19 @@ def get_track_genres(track: Dict[str, Any], artist_cache: Optional[Dict[str, Lis
             genres.append('power pop')
             genres.append('post-britpop')
             genres.append('indie rock')
+        # Starship
+        if artist_id == '0kObWap02DEg9EAJ3PBxzf':
+            genres.append('rock')
+            genres.append('pop rock')
+            genres.append('arena rock')
+            genres.append('classic rock')
+        # The Smiths
+        if artist_id == '3yY2gUcIsjMr8hjo51PoJ8':
+            genres.append('indie rock') 
+            genres.append('alternative rock')
+            genres.append('post-punk')
+            genres.append('indie pop')
+            genres.append('jangle pop')
         
         # Add national level genres
         if artist_data.get('country') == 'BR':
