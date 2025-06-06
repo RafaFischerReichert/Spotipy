@@ -41,4 +41,4 @@ Thumbs.db
 __pycache__
 .cache
 config.py
-track_genre_cache.json
+*.json

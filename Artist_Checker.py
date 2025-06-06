@@ -85,5 +85,5 @@ def print_artist_genres(artist_id: str):
 
 if __name__ == "__main__":
     # Example usage - replace with your artist ID
-    artist_id = "3rIZMv9rysU7JkLzEaC5Jp"
+    artist_id = "7Ln80lUS6He07XvHI8qqHH"
     print_artist_genres(artist_id)
