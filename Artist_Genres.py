@@ -326,7 +326,108 @@ ARTIST_GENRE_MAPPINGS: Dict[str, List[str]] = {
         'disco',
         'pop',
         'soul'
-    ]
+    ],
+    '5nCi3BB41mBaMH9gfr6Su0': [  # fun.
+        'indie pop',
+        'indie rock',
+        'pop rock',
+        'baroque pop'
+    ],
+    '4mYFgEjpQT4IKOrjOUKyXu': [  # Wheatus
+        'alternative rock',
+        'pop rock',
+        'power pop'
+    ],
+    '': [
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
+    '': [  # 
+        
+    ],
 }
 
 def get_custom_artist_genres(artist_id: str) -> List[str]:

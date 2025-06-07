@@ -4,24 +4,73 @@ from typing import Dict, List, Set, Optional, Any
 from spotify_client import sp, get_artist_with_retry
 from Artist_Genres import get_custom_artist_genres
 
-# Cache file path
-CACHE_FILE = "track_genre_cache.json"
+# Cache file paths
+ARTIST_CACHE_FILE = "artist_genre_cache.json"
 
-def load_track_cache() -> Dict[str, List[str]]:
-    """Load the track genre cache from file if it exists."""
-    if os.path.exists(CACHE_FILE):
+def load_artist_cache() -> Dict[str, List[str]]:
+    """Load the artist genre cache from file if it exists."""
+    if os.path.exists(ARTIST_CACHE_FILE):
         try:
-            with open(CACHE_FILE, 'r') as f:
+            with open(ARTIST_CACHE_FILE, 'r') as f:
                 return json.load(f)
         except json.JSONDecodeError:
-            print("Cache file corrupted, starting with empty cache")
+            print("Artist cache file corrupted, starting with empty cache")
             return {}
     return {}
 
-def save_track_cache(cache: Dict[str, List[str]]) -> None:
-    """Save the track genre cache to file."""
-    with open(CACHE_FILE, 'w') as f:
+def save_artist_cache(cache: Dict[str, List[str]]) -> None:
+    """Save the artist genre cache to file."""
+    with open(ARTIST_CACHE_FILE, 'w') as f:
         json.dump(cache, f)
+
+def get_artist_genres(artist_id: str, artist_cache: Optional[Dict[str, List[str]]] = None) -> List[str]:
+    """Get genres for an artist, using cache if provided."""
+    # Use cache if available
+    if artist_cache is not None and artist_id in artist_cache:
+        return artist_cache[artist_id]
+    
+    # Load cache if not provided
+    if artist_cache is None:
+        artist_cache = load_artist_cache()
+        if artist_id in artist_cache:
+            return artist_cache[artist_id]
+    
+    # Get artist data with retry logic
+    artist_data: Dict[str, Any] = get_artist_with_retry(artist_id)
+    genres: List[str] = artist_data['genres']
+    
+    # Add custom genres if available
+    custom_genres = get_custom_artist_genres(artist_id)
+    genres.extend(custom_genres)
+    
+    # Add national level genres
+    if artist_data.get('id') == '5APvSx4S3x8Gd8jfaWL4Qi':
+        genres.append('brazilian music')
+    elif artist_data.get('country') == 'BR':
+        genres.append('brazilian music')
+    elif artist_data.get('country') == 'JP':
+        genres.append('Japanese Music')
+    
+    # Update cache
+    artist_cache[artist_id] = genres
+    save_artist_cache(artist_cache)
+    
+    return genres
+
+def get_track_genres(track: Dict[str, Any], artist_cache: Optional[Dict[str, List[str]]] = None) -> List[str]:
+    """Get genres for a track by looking up all artists, using cache if provided"""
+    if not track['track']:
+        return []
+    
+    # Get genres from all artists on the track
+    all_genres: Set[str] = set()
+    
+    for artist in track['track']['artists']:
+        artist_id: str = artist['id']
+        artist_genres = get_artist_genres(artist_id, artist_cache)
+        all_genres.update(artist_genres)
+    
+    return list(all_genres)
 
 def normalize_genre(genre: str) -> List[str]:
     """Normalize genre names to combine similar genres"""
@@ -33,13 +82,13 @@ def normalize_genre(genre: str) -> List[str]:
     
     # Define genre mappings
     genre_mappings = {
-        'metal': ['metal', 'grunge', 'djent'],
+        'metal': ['metal', 'djent'],
         'emo': ['emo'],
         'rap and hip hop': ['rap', 'hip hop'],
         'folk': ['folk'],
         'industrial': ['industrial'],
         'indie and alternative': ['alternative', 'indie'],
-        'rock': ['rock', 'hardcore'],
+        'rock': ['rock', 'hardcore', 'grunge'],
         'glam': ['glam'],
         'country': ['country'],
         'sertanejo': ['sertanejo'],
@@ -88,57 +137,4 @@ def normalize_genre(genre: str) -> List[str]:
     if 'japanese music' in result:
         result.add('Anime + Japanese Music')
     
-    return list(result)
-
-def get_track_genres(track: Dict[str, Any], artist_cache: Optional[Dict[str, List[str]]] = None) -> List[str]:
-    """Get genres for a track by looking up all artists, using cache if provided"""
-    if not track['track']:
-        return []
-    
-    track_id = track['track']['id']
-    
-    # Load track cache
-    track_cache = load_track_cache()
-    
-    # Check if track is in cache
-    if track_id in track_cache:
-        return track_cache[track_id]
-    
-    # Get genres from all artists on the track
-    all_genres: Set[str] = set()
-    
-    for artist in track['track']['artists']:
-        artist_id: str = artist['id']
-        
-        # Use cache if available
-        if artist_cache is not None and artist_id in artist_cache:
-            all_genres.update(artist_cache[artist_id])
-            continue
-        
-        # Get artist data with retry logic
-        artist_data: Dict[str, Any] = get_artist_with_retry(artist_id)
-        genres: List[str] = artist_data['genres']
-        
-        # Add custom genres if available
-        custom_genres = get_custom_artist_genres(artist_id)
-        genres.extend(custom_genres)
-        
-        # Add national level genres
-        if artist_data.get('country') == 'BR':
-            genres.append('brazilian music')
-            
-        if artist_data.get('country') == 'JP':
-            genres.append('Japanese Music')
-        
-        # Update cache if provided
-        if artist_cache is not None:
-            artist_cache[artist_id] = genres
-        
-        all_genres.update(genres)
-    
-    # Convert to list and update track cache
-    genre_list = list(all_genres)
-    track_cache[track_id] = genre_list
-    save_track_cache(track_cache)
-    
-    return genre_list 
+    return list(result) 

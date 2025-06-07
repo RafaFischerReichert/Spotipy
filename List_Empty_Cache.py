@@ -4,98 +4,85 @@ from typing import Dict, List, Set, Any
 from collections import defaultdict
 import json
 import os
-from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
-from Playlist_Tools import sp, load_track_cache, get_artist_with_retry
+from Playlist_Tools import sp, get_artist_with_retry
+from Genre_Tools import load_artist_cache
 
-def get_track_info(track_id: str) -> Dict[str, Any]:
-    """Get track information from Spotify"""
-    try:
-        return sp.track(track_id)
-    except Exception as e:
-        print(f"Error getting track info for {track_id}: {str(e)}")
-        return None
+# Cache file path
+ARTIST_CACHE_FILE = "artist_genre_cache.json"
 
-def list_tracks_without_genres():
-    """List all tracks in the cache that have no genres and group them by artist"""
-    # Load the cache
-    cache = load_track_cache()
+def list_artists_without_genres():
+    """List all artists that have no genres and their tracks"""
+    # Load artist cache
+    artist_cache = load_artist_cache()
     
-    # Group tracks by artist
-    artist_tracks: Dict[str, Set[str]] = defaultdict(set)
-    artist_names: Dict[str, str] = {}
-    artist_countries: Dict[str, str] = {}
+    # Group artists by country
+    country_artists: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     
-    # First pass: collect all tracks and their artists
-    for track_id, genres in cache.items():
-        if not genres:  # Only process tracks with no genres
-            track_info = get_track_info(track_id)
-            if not track_info:
-                continue
+    # Process each artist in the cache
+    for artist_id, genres in artist_cache.items():
+        if not genres:  # Only process artists with no genres
+            try:
+                artist = get_artist_with_retry(artist_id)
+                country = artist.get('country', 'Unknown')
                 
-            track_name = track_info['name']
-            for artist in track_info['artists']:
-                artist_id = artist['id']
-                artist_name = artist['name']
-                artist_tracks[artist_id].add(f"{track_name} ({track_id})")
-                artist_names[artist_id] = artist_name
+                artist_data = {
+                    "name": artist['name'],
+                    "id": artist_id,
+                    "popularity": artist.get('popularity', 0),
+                    "followers": artist.get('followers', {}).get('total', 0)
+                }
+                
+                country_artists[country].append(artist_data)
+                
+            except Exception as e:
+                print(f"Error getting artist info for {artist_id}: {str(e)}")
+                continue
     
-    # Second pass: get artist countries and build results
+    # Build results
     results = {
         "artists": [],
         "summary": {},
         "country_distribution": {}
     }
     
-    for artist_id, tracks in artist_tracks.items():
-        try:
-            artist = get_artist_with_retry(artist_id)
-            country = artist.get('country', 'Unknown')
-            artist_countries[artist_id] = country
-            
-            artist_data = {
-                "name": artist_names[artist_id],
-                "id": artist_id,
-                "country": country,
-                "tracks": sorted(list(tracks))
-            }
-            results["artists"].append(artist_data)
-            
-        except Exception as e:
-            artist_data = {
-                "name": artist_names[artist_id],
-                "id": artist_id,
-                "error": str(e),
-                "tracks": sorted(list(tracks))
-            }
-            results["artists"].append(artist_data)
+    # Sort artists by popularity within each country
+    for country, artists in country_artists.items():
+        sorted_artists = sorted(artists, key=lambda x: (-x['popularity'], x['name']))
+        results["artists"].extend(sorted_artists)
     
     # Calculate summary
-    total_artists = len(artist_tracks)
-    total_tracks = sum(len(tracks) for tracks in artist_tracks.values())
+    total_artists = len(results["artists"])
+    total_countries = len(country_artists)
     
     results["summary"] = {
         "total_artists": total_artists,
-        "total_tracks": total_tracks
+        "total_countries": total_countries
     }
     
     # Calculate country distribution
-    country_distribution = defaultdict(int)
-    for artist_id in artist_tracks.keys():
-        country = artist_countries.get(artist_id, 'Unknown')
-        country_distribution[country] += 1
-    
-    results["country_distribution"] = {
-        country: count 
-        for country, count in sorted(country_distribution.items(), key=lambda x: (-x[1], x[0]))
+    country_distribution = {
+        country: len(artists)
+        for country, artists in sorted(
+            country_artists.items(),
+            key=lambda x: (-len(x[1]), x[0])  # Sort by count (descending) then alphabetically
+        )
     }
     
+    results["country_distribution"] = country_distribution
+    
     # Delete existing JSON file if it exists
-    if os.path.exists('tracks_without_genres.json'):
-        os.remove('tracks_without_genres.json')
+    if os.path.exists('artists_without_genres.json'):
+        os.remove('artists_without_genres.json')
     
     # Save results to JSON file
-    with open('tracks_without_genres.json', 'w', encoding='utf-8') as f:
+    with open('artists_without_genres.json', 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
+    
+    # Print summary to console
+    print(f"\nFound {total_artists} artists without genres across {total_countries} countries")
+    print("\nCountry distribution:")
+    for country, count in country_distribution.items():
+        print(f"- {country}: {count} artists")
 
 if __name__ == "__main__":
-    list_tracks_without_genres()
+    list_artists_without_genres()

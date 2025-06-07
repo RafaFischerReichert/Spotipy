@@ -7,6 +7,7 @@ from Playlist_Tools import (
     get_track_genres,
     sp
 )
+from Genre_Tools import load_artist_cache
 
 def rank_playlist_genres(playlist_id: str) -> None:
     """List genres found in a playlist, ranked by frequency"""
@@ -16,8 +17,8 @@ def rank_playlist_genres(playlist_id: str) -> None:
     # Dictionary to store genre counts
     genre_counts: Dict[str, int] = defaultdict(int)
     
-    # Cache for artist data to reduce API calls
-    artist_cache: Dict[str, List[str]] = {}
+    # Load artist cache
+    artist_cache: Dict[str, List[str]] = load_artist_cache()
     
     # Process tracks
     for i, track in enumerate(tracks):
