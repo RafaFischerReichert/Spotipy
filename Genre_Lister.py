@@ -2,11 +2,12 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import time
 from typing import Dict, List, Set, Any
-from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
+from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, REQUESTS_PER_SECOND
 from Playlist_Tools import (
     get_playlist_tracks,
     get_track_genres,
-    sp
+    sp,
+    RateLimiter
 )
 
 # Initialize Spotify client
@@ -19,6 +20,9 @@ sp: spotipy.Spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
 
 def list_playlist_genres(playlist_id: str) -> None:
     """List all unique genres found in a playlist"""
+    # Initialize rate limiter
+    rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
+    
     # Get all tracks from the playlist
     tracks: List[Dict[str, Any]] = get_playlist_tracks(playlist_id)
     
@@ -35,7 +39,7 @@ def list_playlist_genres(playlist_id: str) -> None:
         
         genres: List[str] = get_track_genres(track, artist_cache)
         unique_genres.update(genres)
-        time.sleep(0.2)  # Rate limiting
+        rate_limiter.wait()
     
     # Print results
     print("\nUnique genres found in playlist:")

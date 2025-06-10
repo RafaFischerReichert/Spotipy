@@ -5,14 +5,15 @@ import time
 import json
 import os
 from typing import Dict, List, Set, Any
-from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, PLAYLIST_ID
+from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, PLAYLIST_ID, REQUESTS_PER_SECOND
 from Playlist_Tools import (
     get_playlist_tracks,
     get_track_genres,
     normalize_genre,
     get_existing_playlists,
     get_playlist_track_ids,
-    sp
+    sp,
+    RateLimiter
 )
 
 # Initialize Spotify client
@@ -43,6 +44,9 @@ def save_track_cache(cache: Dict[str, List[str]]) -> None:
         json.dump(cache, f)
 
 def create_genre_playlists(playlist_id: str) -> None:
+    # Initialize rate limiter using config value
+    rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
+    
     # Get all tracks from the source playlist
     tracks: List[Dict[str, Any]] = get_playlist_tracks(playlist_id)
     
@@ -90,7 +94,7 @@ def create_genre_playlists(playlist_id: str) -> None:
             save_track_cache(track_cache)
             print(f"Cache stats: {cache_hits} hits, {cache_misses} misses")
         
-        time.sleep(0.2)
+        rate_limiter.wait()
     
     # Save final cache state
     save_track_cache(track_cache)
@@ -125,7 +129,7 @@ def create_genre_playlists(playlist_id: str) -> None:
                 )
                 playlist_id: str = playlist['id']
                 print(f"Created new playlist '{playlist_name}'")
-                time.sleep(0.5)
+                rate_limiter.wait()
             
             # Convert set back to list for the API call
             track_ids_list: List[str] = list(track_ids)
@@ -134,7 +138,7 @@ def create_genre_playlists(playlist_id: str) -> None:
             for i in range(0, len(track_ids_list), 50):
                 chunk: List[str] = track_ids_list[i:i + 50]
                 sp.playlist_add_items(playlist_id, chunk)
-                time.sleep(0.3)
+                rate_limiter.wait()
             
             print(f"Added {len(track_ids)} unique tracks to '{playlist_name}'")
         except Exception as e:

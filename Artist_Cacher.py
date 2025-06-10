@@ -1,23 +1,11 @@
 from typing import Dict, List, Set
 from spotify_client import sp
 from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_genres
-from Playlist_Tools import get_playlist_track_ids, get_existing_playlists
+from Playlist_Tools import get_playlist_track_ids, get_existing_playlists, RateLimiter
 import time
-from config import PLAYLIST_ID
+from config import PLAYLIST_ID, REQUESTS_PER_SECOND
 from datetime import timedelta
 from tqdm import tqdm
-
-class RateLimiter:
-    def __init__(self, requests_per_second: float = 0.1):
-        self.requests_per_second = requests_per_second
-        self.last_request_time = 0.0
-        
-    def wait(self):
-        current_time = time.time()
-        time_since_last_request = current_time - self.last_request_time
-        if time_since_last_request < (1.0 / self.requests_per_second):
-            time.sleep((1.0 / self.requests_per_second) - time_since_last_request)
-        self.last_request_time = time.time()
 
 def format_time(seconds: float) -> str:
     """Format seconds into a human readable time string."""
@@ -28,8 +16,8 @@ def cache_artist_genres(playlist_id: str) -> None:
     Cache genres for all artists in a playlist.
     Uses existing cache and updates it with new artist data.
     """
-    # Initialize rate limiter (10 requests per second)
-    rate_limiter = RateLimiter(requests_per_second=10)
+    # Initialize rate limiter using config value
+    rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
     
     # Load existing cache
     artist_cache: Dict[str, List[str]] = load_artist_cache()

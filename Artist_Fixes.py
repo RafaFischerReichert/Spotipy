@@ -5,6 +5,8 @@ import time
 from spotify_client import sp, get_artist_with_retry
 from Genre_Tools import get_track_genres, load_track_cache, save_track_cache
 from Artist_Genres import get_custom_artist_genres
+from config import REQUESTS_PER_SECOND
+from Playlist_Tools import RateLimiter
 
 # Cache file path (same as in other files)
 CACHE_FILE = "track_genre_cache.json"
@@ -28,6 +30,8 @@ def save_track_cache(cache: Dict[str, List[str]]) -> None:
 def get_artist_tracks(artist_id: str) -> List[Dict[str, Any]]:
     """Get all tracks by an artist from their albums."""
     tracks = []
+    rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
+    
     try:
         albums = sp.artist_albums(artist_id, album_type='album,single', limit=50)
         
@@ -36,8 +40,8 @@ def get_artist_tracks(artist_id: str) -> List[Dict[str, Any]]:
             for track in album_tracks['items']:
                 if any(artist['id'] == artist_id for artist in track['artists']):
                     tracks.append({'track': track})  # Wrap in same format as playlist tracks
-            time.sleep(0.1)  # Rate limiting
-        time.sleep(0.2)  # Rate limiting between albums
+            rate_limiter.wait()
+        rate_limiter.wait()  # Rate limiting between albums
     except Exception as e:
         print(f"Error getting tracks for artist {artist_id}: {str(e)}")
     return tracks

@@ -11,3 +11,6 @@ REDIRECT_URI = 'your-redirect-uri-here'
 
 # Source playlist ID to analyze
 PLAYLIST_ID = 'your-playlist-id-here' 
+
+# Rate limiting configuration
+REQUESTS_PER_SECOND = 2  # Adjust this value to control API call frequency 

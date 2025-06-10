@@ -1,16 +1,20 @@
 from collections import defaultdict
 import time
 from typing import Dict, List, Any
-from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
+from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, REQUESTS_PER_SECOND
 from Playlist_Tools import (
     get_playlist_tracks,
     get_track_genres,
-    sp
+    sp,
+    RateLimiter
 )
 from Genre_Tools import load_artist_cache
 
 def rank_playlist_genres(playlist_id: str) -> None:
     """List genres found in a playlist, ranked by frequency"""
+    # Initialize rate limiter
+    rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
+    
     # Get all tracks from the playlist
     tracks: List[Dict[str, Any]] = get_playlist_tracks(playlist_id)
     
@@ -28,7 +32,7 @@ def rank_playlist_genres(playlist_id: str) -> None:
         genres: List[str] = get_track_genres(track, artist_cache)
         for genre in genres:
             genre_counts[genre] += 1
-        time.sleep(0.2)  # Rate limiting
+        rate_limiter.wait()
     
     # Sort genres by count (descending)
     sorted_genres: List[tuple[str, int]] = sorted(
