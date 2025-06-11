@@ -23,6 +23,28 @@ def save_artist_cache(cache: Dict[str, List[str]]) -> None:
     with open(ARTIST_CACHE_FILE, 'w') as f:
         json.dump(cache, f)
 
+def get_artists_batch(artist_ids: List[str], batch_size: int = 50) -> List[Dict[str, Any]]:
+    """Get multiple artists in a single API call to reduce requests."""
+    all_artists = []
+    
+    for i in range(0, len(artist_ids), batch_size):
+        batch = artist_ids[i:i + batch_size]
+        try:
+            artists = sp.artists(batch)
+            all_artists.extend(artists['artists'])
+        except Exception as e:
+            print(f"Error getting batch of artists: {str(e)}")
+            # Fallback to individual requests for failed batch
+            for artist_id in batch:
+                try:
+                    artist = sp.artist(artist_id)
+                    all_artists.append(artist)
+                except Exception as e2:
+                    print(f"Error getting artist {artist_id}: {str(e2)}")
+                    continue
+    
+    return all_artists
+
 def get_artist_genres(artist_id: str, artist_cache: Optional[Dict[str, List[str]]] = None) -> List[str]:
     """Get genres for an artist, using cache if provided."""
     # Use cache if available
@@ -57,18 +79,65 @@ def get_artist_genres(artist_id: str, artist_cache: Optional[Dict[str, List[str]
     
     return genres
 
+def get_artist_genres_batch(artist_ids: List[str], artist_cache: Optional[Dict[str, List[str]]] = None) -> Dict[str, List[str]]:
+    """Get genres for multiple artists in batch, using cache if provided."""
+    if artist_cache is None:
+        artist_cache = load_artist_cache()
+    
+    # Separate cached and uncached artists
+    cached_artists = {}
+    uncached_artist_ids = []
+    
+    for artist_id in artist_ids:
+        if artist_id in artist_cache:
+            cached_artists[artist_id] = artist_cache[artist_id]
+        else:
+            uncached_artist_ids.append(artist_id)
+    
+    # Batch fetch uncached artists
+    if uncached_artist_ids:
+        artists_data = get_artists_batch(uncached_artist_ids)
+        
+        for artist in artists_data:
+            if artist:  # Check if artist exists
+                artist_id = artist['id']
+                genres = artist['genres']
+                
+                # Add custom genres if available
+                custom_genres = get_custom_artist_genres(artist_id)
+                genres.extend(custom_genres)
+                
+                # Add national level genres
+                if artist.get('country') == 'BR':
+                    genres.append('brazilian music')
+                elif artist.get('country') == 'JP':
+                    genres.append('Japanese Music')
+                
+                # Update cache
+                artist_cache[artist_id] = genres
+                cached_artists[artist_id] = genres
+        
+        # Save cache after batch update
+        save_artist_cache(artist_cache)
+    
+    return cached_artists
+
 def get_track_genres(track: Dict[str, Any], artist_cache: Optional[Dict[str, List[str]]] = None) -> List[str]:
     """Get genres for a track by looking up all artists, using cache if provided"""
     if not track['track']:
         return []
     
-    # Get genres from all artists on the track
-    all_genres: Set[str] = set()
+    # Get all artist IDs from the track
+    artist_ids = [artist['id'] for artist in track['track']['artists']]
     
-    for artist in track['track']['artists']:
-        artist_id: str = artist['id']
-        artist_genres = get_artist_genres(artist_id, artist_cache)
-        all_genres.update(artist_genres)
+    # Get genres for all artists in batch
+    artist_genres = get_artist_genres_batch(artist_ids, artist_cache)
+    
+    # Combine all genres
+    all_genres: Set[str] = set()
+    for artist_id in artist_ids:
+        if artist_id in artist_genres:
+            all_genres.update(artist_genres[artist_id])
     
     return list(all_genres)
 

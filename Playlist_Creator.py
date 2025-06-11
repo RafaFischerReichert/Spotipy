@@ -12,6 +12,7 @@ from Playlist_Tools import (
     normalize_genre,
     get_existing_playlists,
     get_playlist_track_ids,
+    create_genre_playlists,
     sp,
     RateLimiter
 )
@@ -43,108 +44,94 @@ def save_track_cache(cache: Dict[str, List[str]]) -> None:
     with open(CACHE_FILE, 'w') as f:
         json.dump(cache, f)
 
-def create_genre_playlists(playlist_id: str) -> None:
+def create_genre_playlists_optimized(playlist_id: str) -> None:
+    """Create genre playlists with optimized batch processing and caching"""
     # Initialize rate limiter using config value
     rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
     
-    # Get all tracks from the source playlist
-    tracks: List[Dict[str, Any]] = get_playlist_tracks(playlist_id)
-    
-    # Group tracks by genre using sets to prevent duplicates
-    genre_tracks: Dict[str, Set[str]] = defaultdict(set)
-    
-    # Cache for artist data to reduce API calls
-    artist_cache: Dict[str, List[str]] = {}
-    
-    # Load track genre cache
-    track_cache: Dict[str, List[str]] = load_track_cache()
-    cache_hits = 0
-    cache_misses = 0
-    
-    # Process tracks in batches to avoid rate limiting
-    for i, track in enumerate(tracks):
-        if i % 50 == 0:  
-            print(f"Processing track {i}/{len(tracks)}")
-        
-        if not track['track']:
-            continue
-            
-        track_id: str = track['track']['id']
-        
-        # Check if track is in cache
-        if track_id in track_cache:
-            genres = track_cache[track_id]
-            cache_hits += 1
-        else:
-            genres = get_track_genres(track, artist_cache)
-            track_cache[track_id] = genres
-            cache_misses += 1
-        
-        # Normalize genres and add track to each unique normalized genre
-        normalized_genres: Set[str] = set()
-        for genre in genres:
-            normalized_genres.update(normalize_genre(genre))
-        
-        # Add track to each unique normalized genre
-        for genre in normalized_genres:
-            genre_tracks[genre].add(track_id)
-        
-        # Save cache periodically (every 100 tracks)
-        if (i + 1) % 100 == 0:
-            save_track_cache(track_cache)
-            print(f"Cache stats: {cache_hits} hits, {cache_misses} misses")
-        
-        rate_limiter.wait()
-    
-    # Save final cache state
-    save_track_cache(track_cache)
-    print(f"Final cache stats: {cache_hits} hits, {cache_misses} misses")
+    # Use the optimized function from Playlist_Tools
+    genre_tracks = create_genre_playlists(playlist_id)
     
     # Get user's playlists to check for existing ones
     existing_playlists: Dict[str, str] = get_existing_playlists()
+    
+    # Batch create playlists and add tracks
+    playlists_to_create = []
+    playlists_to_update = []
     
     for genre, track_ids in genre_tracks.items():
         if len(track_ids) < 100:  # Skip genres with too few tracks
             continue
             
         playlist_name: str = f"{genre.title()}"
-        try:
-            # Check if playlist already exists
-            if playlist_name in existing_playlists:
-                playlist_id: str = existing_playlists[playlist_name]
-                print(f"Found existing playlist '{playlist_name}', checking for existing tracks...")
-                
-                # Get existing tracks in playlist
-                existing_tracks: Set[str] = get_playlist_track_ids(playlist_id)
-                
-                # Filter out tracks that already exist in the playlist
-                track_ids = track_ids - existing_tracks
-                print(f"Found {len(track_ids)} new tracks to add...")
-            else:
-                # Create new playlist if it doesn't exist
+        
+        if playlist_name in existing_playlists:
+            playlists_to_update.append((playlist_name, existing_playlists[playlist_name], track_ids))
+        else:
+            playlists_to_create.append((playlist_name, track_ids))
+    
+    # Create new playlists in batches
+    if playlists_to_create:
+        print(f"\nCreating {len(playlists_to_create)} new playlists...")
+        user_id = sp.current_user()['id']
+        
+        for playlist_name, track_ids in playlists_to_create:
+            try:
                 playlist: Dict[str, Any] = sp.user_playlist_create(
-                    user=sp.current_user()['id'],
+                    user=user_id,
                     name=playlist_name,
                     public=True
                 )
                 playlist_id: str = playlist['id']
                 print(f"Created new playlist '{playlist_name}'")
+                
+                # Add tracks to playlist in chunks of 50
+                track_ids_list: List[str] = list(track_ids)
+                for i in range(0, len(track_ids_list), 50):
+                    chunk: List[str] = track_ids_list[i:i + 50]
+                    sp.playlist_add_items(playlist_id, chunk)
+                    rate_limiter.wait()
+                
+                print(f"Added {len(track_ids)} tracks to '{playlist_name}'")
                 rate_limiter.wait()
-            
-            # Convert set back to list for the API call
-            track_ids_list: List[str] = list(track_ids)
-            
-            # Add tracks to playlist in chunks of 50
-            for i in range(0, len(track_ids_list), 50):
-                chunk: List[str] = track_ids_list[i:i + 50]
-                sp.playlist_add_items(playlist_id, chunk)
-                rate_limiter.wait()
-            
-            print(f"Added {len(track_ids)} unique tracks to '{playlist_name}'")
-        except Exception as e:
-            print(f"Error updating playlist for {genre}: {str(e)}")
-            time.sleep(5)  # Long delay after error
-            continue
+                
+            except Exception as e:
+                print(f"Error creating playlist for {genre}: {str(e)}")
+                time.sleep(5)  # Long delay after error
+                continue
+    
+    # Update existing playlists in batches
+    if playlists_to_update:
+        print(f"\nUpdating {len(playlists_to_update)} existing playlists...")
+        
+        for playlist_name, playlist_id, track_ids in playlists_to_update:
+            try:
+                print(f"Checking existing tracks in '{playlist_name}'...")
+                
+                # Get existing tracks in playlist
+                existing_tracks: Set[str] = get_playlist_track_ids(playlist_id)
+                
+                # Filter out tracks that already exist in the playlist
+                new_track_ids = track_ids - existing_tracks
+                
+                if new_track_ids:
+                    print(f"Adding {len(new_track_ids)} new tracks to '{playlist_name}'...")
+                    
+                    # Add tracks to playlist in chunks of 50
+                    track_ids_list: List[str] = list(new_track_ids)
+                    for i in range(0, len(track_ids_list), 50):
+                        chunk: List[str] = track_ids_list[i:i + 50]
+                        sp.playlist_add_items(playlist_id, chunk)
+                        rate_limiter.wait()
+                    
+                    print(f"Added {len(new_track_ids)} tracks to '{playlist_name}'")
+                else:
+                    print(f"No new tracks to add to '{playlist_name}'")
+                
+            except Exception as e:
+                print(f"Error updating playlist for {genre}: {str(e)}")
+                time.sleep(5)  # Long delay after error
+                continue
 
 if __name__ == "__main__":
-    create_genre_playlists(PLAYLIST_ID)
+    create_genre_playlists_optimized(PLAYLIST_ID)
