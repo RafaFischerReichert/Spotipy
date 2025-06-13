@@ -11,7 +11,7 @@ from Genre_Tools import load_artist_cache
 ARTIST_CACHE_FILE = "artist_genre_cache.json"
 
 def list_artists_without_genres():
-    """List all artists that have no genres and their tracks with optimized batch processing"""
+    """List all artists that have no genres in the same format as Artist_Genres"""
     # Load artist cache
     artist_cache = load_artist_cache()
     
@@ -27,11 +27,10 @@ def list_artists_without_genres():
     
     print(f"Found {len(artists_without_genres)} artists without genres in cache.")
     
-    # Group artists by country
-    country_artists: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
-    
     # Process artists in batches of 50
     batch_size = 50
+    artists_data = {}
+    
     for i in range(0, len(artists_without_genres), batch_size):
         batch_artist_ids = artists_without_genres[i:i + batch_size]
         
@@ -42,16 +41,10 @@ def list_artists_without_genres():
             for artist in artists['artists']:
                 if artist:  # Check if artist exists
                     artist_id = artist['id']
-                    country = artist.get('country', 'Unknown')
+                    artist_name = artist['name']
                     
-                    artist_data = {
-                        "name": artist['name'],
-                        "id": artist_id,
-                        "popularity": artist.get('popularity', 0),
-                        "followers": artist.get('followers', {}).get('total', 0)
-                    }
-                    
-                    country_artists[country].append(artist_data)
+                    # Format in the same way as Artist_Genres
+                    artists_data[artist_id] = [artist_name]  # artist_name
                     
         except Exception as e:
             print(f"Error getting batch of artists: {str(e)}")
@@ -59,66 +52,25 @@ def list_artists_without_genres():
             for artist_id in batch_artist_ids:
                 try:
                     artist = get_artist_with_retry(artist_id)
-                    country = artist.get('country', 'Unknown')
+                    artist_name = artist['name']
                     
-                    artist_data = {
-                        "name": artist['name'],
-                        "id": artist_id,
-                        "popularity": artist.get('popularity', 0),
-                        "followers": artist.get('followers', {}).get('total', 0)
-                    }
-                    
-                    country_artists[country].append(artist_data)
+                    # Format in the same way as Artist_Genres
+                    artists_data[artist_id] = [artist_name]  # artist_name
                     
                 except Exception as e2:
                     print(f"Error getting artist info for {artist_id}: {str(e2)}")
                     continue
     
-    # Build results
-    results = {
-        "artists": [],
-        "summary": {},
-        "country_distribution": {}
-    }
+    # Sort artists by name for consistent output
+    sorted_artists = dict(sorted(artists_data.items(), key=lambda x: x[1][0] if x[1] else ''))
     
-    # Sort artists by popularity within each country
-    for country, artists in country_artists.items():
-        sorted_artists = sorted(artists, key=lambda x: (-x['popularity'], x['name']))
-        results["artists"].extend(sorted_artists)
-    
-    # Calculate summary
-    total_artists = len(results["artists"])
-    total_countries = len(country_artists)
-    
-    results["summary"] = {
-        "total_artists": total_artists,
-        "total_countries": total_countries
-    }
-    
-    # Calculate country distribution
-    country_distribution = {
-        country: len(artists)
-        for country, artists in sorted(
-            country_artists.items(),
-            key=lambda x: (-len(x[1]), x[0])  # Sort by count (descending) then alphabetically
-        )
-    }
-    
-    results["country_distribution"] = country_distribution
-    
-    # Delete existing JSON file if it exists
-    if os.path.exists('artists_without_genres.json'):
-        os.remove('artists_without_genres.json')
-    
-    # Save results to JSON file
-    with open('artists_without_genres.json', 'w', encoding='utf-8') as f:
-        json.dump(results, f, indent=2, ensure_ascii=False)
-    
-    # Print summary to console
-    print(f"\nFound {total_artists} artists without genres across {total_countries} countries")
-    print("\nCountry distribution:")
-    for country, count in country_distribution.items():
-        print(f"- {country}: {count} artists")
+    # Save results to text file in Artist_Genres format
+    with open('artists_without_genres.txt', 'w', encoding='utf-8') as f:
+        for artist_id, artist_info in sorted_artists.items():
+            artist_name = artist_info[0] if artist_info else "Unknown"
+            f.write(f"    '{artist_id}': [  # {artist_name}\n")
+            f.write("        \n")
+            f.write("    ],\n")
 
 if __name__ == "__main__":
     list_artists_without_genres()

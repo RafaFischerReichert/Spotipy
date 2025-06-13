@@ -42,3 +42,4 @@ __pycache__
 .cache
 config.py
 *.json
+*.txt

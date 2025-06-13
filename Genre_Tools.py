@@ -153,16 +153,16 @@ def normalize_genre(genre: str) -> List[str]:
     genre_mappings = {
         'metal': ['metal', 'djent'],
         'emo': ['emo'],
-        'rap and hip hop': ['rap', 'hip hop'],
+        'rap and hip hop': ['rap', 'hip hop', 'hip-hop'],
         'folk': ['folk'],
         'industrial': ['industrial'],
-        'indie and alternative': ['alternative', 'indie'],
+        'indie and alternative': ['alternative', 'indie', 'alt'],
         'rock': ['rock', 'hardcore', 'grunge'],
         'glam': ['glam'],
         'country': ['country'],
         'sertanejo': ['sertanejo'],
         'mpb': ['mpb'],
-        'blues': ['blues', 'r&b'],
+        '(Rhythm and )Blues': ['blues', 'r&b', 'rhythm and blues'],
         'japanese music': ['kei', 'japanese music', 'kayokyoku', 'j-pop', 'shibuya-kei', 'j-rock', 'japanese indie', 'j-rap', 'vocaloid']
     }
     
@@ -178,7 +178,7 @@ def normalize_genre(genre: str) -> List[str]:
         'brazilian hip hop': ['brazilian hip hop', 'brazilian trap'],
         'anime': ['anime', 'anime rap'],
         'celtic rock': ['celtic'],
-        'electronic': ['electro', 'electronica', 'edm'],
+        'electro and edm': ['electro', 'electronica', 'edm'],
         'hardcore': ['hardcore punk'],
         'drum and bass': ['bass music'],
         'medieval': ['medieval metal']
