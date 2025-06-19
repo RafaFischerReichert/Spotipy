@@ -1,15 +1,14 @@
 from collections import defaultdict
-import time
 from typing import Dict, List, Any, Set
-from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, REQUESTS_PER_SECOND
+from config import REQUESTS_PER_SECOND
 from Playlist_Tools import (
     get_playlist_tracks,
     get_track_genres,
     sp,
     RateLimiter
 )
-from Genre_Tools import load_artist_cache
-from Artist_Genres import get_custom_artist_genres
+from Genre_Tools import load_artist_cache, get_custom_artist_genres
+
 
 def rank_playlist_genres(playlist_id: str) -> None:
     """List genres found in a playlist, ranked by frequency with optimized batch processing"""
@@ -23,7 +22,7 @@ def rank_playlist_genres(playlist_id: str) -> None:
     genre_counts: Dict[str, int] = defaultdict(int)
     
     # Load artist cache for better performance
-    artist_cache: Dict[str, List[str]] = load_artist_cache()
+    artist_cache: Dict[str, Dict[str, Any]] = load_artist_cache()
     
     # Extract all unique artist IDs from tracks for batch processing
     all_artist_ids: Set[str] = set()
@@ -58,7 +57,10 @@ def rank_playlist_genres(playlist_id: str) -> None:
                             genres.append('Japanese Music')
                         
                         # Update cache
-                        artist_cache[artist_id] = genres
+                        artist_cache[artist_id] = {
+                            'genres': genres,
+                            'country': artist.get('country')
+                        }
                 
                 rate_limiter.wait()
                 

@@ -1,8 +1,5 @@
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
-import time
 from typing import Dict, List, Set, Any
-from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, REQUESTS_PER_SECOND
+from config import REQUESTS_PER_SECOND
 from Playlist_Tools import (
     get_playlist_tracks,
     get_track_genres,
@@ -10,14 +7,6 @@ from Playlist_Tools import (
     RateLimiter
 )
 from Genre_Tools import load_artist_cache
-
-# Initialize Spotify client
-sp: spotipy.Spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
-    client_id=CLIENT_ID,
-    client_secret=CLIENT_SECRET,
-    redirect_uri=REDIRECT_URI,
-    scope='user-library-read'  # Only need read access for this
-))
 
 def list_playlist_genres(playlist_id: str) -> None:
     """List all unique genres found in a playlist with optimized batch processing"""
@@ -31,7 +20,7 @@ def list_playlist_genres(playlist_id: str) -> None:
     unique_genres: Set[str] = set()
     
     # Load artist cache for better performance
-    artist_cache: Dict[str, List[str]] = load_artist_cache()
+    artist_cache: Dict[str, Dict[str, Any]] = load_artist_cache()
     
     # Extract all unique artist IDs from tracks for batch processing
     all_artist_ids: Set[str] = set()
@@ -67,7 +56,10 @@ def list_playlist_genres(playlist_id: str) -> None:
                             genres.append('Japanese Music')
                         
                         # Update cache
-                        artist_cache[artist_id] = genres
+                        artist_cache[artist_id] = {
+                            'genres': genres,
+                            'country': artist.get('country')
+                        }
                 
                 rate_limiter.wait()
                 

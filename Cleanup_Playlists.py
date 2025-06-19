@@ -1,0 +1,311 @@
+#!/usr/bin/env python3
+"""
+Cleanup_Playlists.py - Cleans up incorrect track additions from genre playlists
+
+This script:
+1. Identifies genre playlists that may have incorrect tracks
+2. Removes tracks that don't belong to the exact genre of the playlist
+3. Uses the corrected matching logic to ensure only proper tracks remain
+4. Provides options for different cleanup strategies
+"""
+
+from typing import Dict, List
+from config import REQUESTS_PER_SECOND
+from spotify_client import sp
+from Playlist_Tools import get_existing_playlists, get_playlist_track_ids, RateLimiter
+from Genre_Tools import normalize_genre, load_artist_cache
+
+def find_matching_playlists(genre: str, existing_playlists: Dict[str, str]) -> List[str]:
+    """Find playlists that match a given genre exactly"""
+    matching_playlists = []
+    normalized_genres = normalize_genre(genre)
+    
+    for playlist_name, playlist_id in existing_playlists.items():
+        playlist_name_lower = playlist_name.lower()
+        
+        # Check for exact matches with normalized genres
+        for norm_genre in normalized_genres:
+            # Exact match: playlist name should exactly match the normalized genre
+            if playlist_name_lower == norm_genre.lower():
+                matching_playlists.append(playlist_id)
+                break
+    
+    return matching_playlists
+
+def get_playlist_genre(playlist_name: str) -> str:
+    """Extract the genre from playlist name"""
+    # Remove common prefixes/suffixes and get the main genre
+    name_lower = playlist_name.lower()
+    
+    # Common genre playlist patterns
+    genre_patterns = [
+        'metal', 'rock', 'pop', 'hip hop', 'rap', 'jazz', 'classical', 'electronic',
+        'folk', 'country', 'r&b', 'blues', 'reggae', 'punk', 'indie', 'alternative',
+        'brazilian', 'japanese', 'anime', 'emo', 'industrial', 'glam', 'sertanejo',
+        'mpb', 'hardcore', 'celtic', 'medieval', 'comedy', 'electro', 'edm'
+    ]
+    
+    for pattern in genre_patterns:
+        if pattern in name_lower:
+            return pattern
+    
+    # If no pattern matches, return the playlist name as is
+    return name_lower
+
+def should_track_be_in_playlist(track_genres: List[str], playlist_genre: str) -> bool:
+    """Check if a track should be in a specific genre playlist"""
+    # Normalize the playlist genre
+    playlist_genre_lower = playlist_genre.lower()
+    
+    # Check each track genre
+    for track_genre in track_genres:
+        normalized_track_genres = normalize_genre(track_genre)
+        
+        # Check for exact match
+        for norm_genre in normalized_track_genres:
+            if norm_genre.lower() == playlist_genre_lower:
+                return True
+    
+    return False
+
+def cleanup_playlist(playlist_id: str, playlist_name: str, rate_limiter: RateLimiter) -> Dict[str, int]:
+    """Clean up a single playlist by removing incorrect tracks"""
+    print(f"\n🧹 Cleaning playlist: {playlist_name}")
+    
+    # Load artist cache for faster genre lookup
+    artist_cache = load_artist_cache()
+    
+    # Get all tracks in the playlist
+    all_track_ids = get_playlist_track_ids(playlist_id)
+    print(f"   📊 Found {len(all_track_ids)} tracks in playlist")
+    
+    # Get playlist genre
+    playlist_genre = get_playlist_genre(playlist_name)
+    print(f"   🎵 Playlist genre: {playlist_genre}")
+    
+    # Get track details to check genres
+    tracks_to_remove = []
+    tracks_to_keep = []
+    
+    # Process tracks in batches
+    batch_size = 50
+    for i in range(0, len(all_track_ids), batch_size):
+        batch_ids = list(all_track_ids)[i:i + batch_size]
+        
+        try:
+            # Get track details
+            tracks_data = sp.tracks(batch_ids)
+            
+            for track_data in tracks_data['tracks']:
+                if not track_data:
+                    continue
+                
+                track_id = track_data['id']
+                
+                # Get genres for this track
+                track_genres = []
+                for artist in track_data['artists']:
+                    artist_id = artist['id']
+                    if artist_id in artist_cache:
+                        track_genres.extend(artist_cache[artist_id]['genres'])
+                
+                # Check if track should be in this playlist
+                if should_track_be_in_playlist(track_genres, playlist_genre):
+                    tracks_to_keep.append(track_id)
+                else:
+                    tracks_to_remove.append(track_id)
+                    print(f"   ❌ Track '{track_data['name']}' by {track_data['artists'][0]['name']} doesn't belong (genres: {track_genres})")
+            
+            rate_limiter.wait()
+            
+        except Exception as e:
+            print(f"   ⚠️  Error processing batch: {str(e)}")
+            continue
+    
+    # Remove incorrect tracks
+    removed_count = 0
+    if tracks_to_remove:
+        print(f"   🗑️  Removing {len(tracks_to_remove)} incorrect tracks...")
+        
+        # Remove tracks in batches
+        for i in range(0, len(tracks_to_remove), 50):
+            batch = tracks_to_remove[i:i + 50]
+            try:
+                sp.playlist_remove_all_occurrences_of_items(playlist_id, batch)
+                removed_count += len(batch)
+                rate_limiter.wait()
+            except Exception as e:
+                print(f"   ⚠️  Error removing batch: {str(e)}")
+    
+    print(f"   ✅ Kept {len(tracks_to_keep)} tracks, removed {removed_count} tracks")
+    
+    return {
+        'kept': len(tracks_to_keep),
+        'removed': removed_count,
+        'total': len(all_track_ids)
+    }
+
+def identify_genre_playlists(existing_playlists: Dict[str, str]) -> Dict[str, str]:
+    """Identify playlists that are likely genre playlists"""
+    genre_playlists = {}
+    
+    genre_keywords = [
+        'metal', 'rock', 'pop', 'hip hop', 'rap', 'jazz', 'classical', 'electronic',
+        'folk', 'country', 'r&b', 'blues', 'reggae', 'punk', 'indie', 'alternative',
+        'brazilian', 'japanese', 'anime', 'emo', 'industrial', 'glam', 'sertanejo',
+        'mpb', 'hardcore', 'celtic', 'medieval', 'comedy', 'electro', 'edm'
+    ]
+    
+    for playlist_name, playlist_id in existing_playlists.items():
+        name_lower = playlist_name.lower()
+        
+        # Check if playlist name contains genre keywords
+        for keyword in genre_keywords:
+            if keyword in name_lower:
+                genre_playlists[playlist_name] = playlist_id
+                break
+    
+    return genre_playlists
+
+def cleanup_all_genre_playlists() -> None:
+    """Clean up all genre playlists"""
+    print("🧹 Genre Playlist Cleanup Tool")
+    print("=" * 60)
+    
+    # Initialize rate limiter
+    rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
+    
+    # Get existing playlists
+    existing_playlists = get_existing_playlists()
+    print(f"📊 Found {len(existing_playlists)} total playlists")
+    
+    # Identify genre playlists
+    genre_playlists = identify_genre_playlists(existing_playlists)
+    print(f"🎵 Found {len(genre_playlists)} genre playlists")
+    
+    if not genre_playlists:
+        print("❌ No genre playlists found to clean up")
+        return
+    
+    # Show genre playlists
+    print("\n🎵 Genre playlists found:")
+    for i, (name, playlist_id) in enumerate(genre_playlists.items(), 1):
+        print(f"   {i}. {name}")
+    
+    # Ask for confirmation
+    print(f"\n⚠️  This will clean up {len(genre_playlists)} genre playlists.")
+    print("   Tracks that don't belong to the exact genre will be removed.")
+    
+    response = input("\nContinue with cleanup? (y/N): ").strip().lower()
+    if response != 'y':
+        print("❌ Cleanup cancelled")
+        return
+    
+    # Clean up each playlist
+    total_kept = 0
+    total_removed = 0
+    total_tracks = 0
+    
+    for playlist_name, playlist_id in genre_playlists.items():
+        try:
+            stats = cleanup_playlist(playlist_id, playlist_name, rate_limiter)
+            total_kept += stats['kept']
+            total_removed += stats['removed']
+            total_tracks += stats['total']
+        except Exception as e:
+            print(f"❌ Error cleaning playlist {playlist_name}: {str(e)}")
+            continue
+    
+    # Final summary
+    print("\n" + "=" * 60)
+    print("CLEANUP SUMMARY")
+    print("=" * 60)
+    print(f"🎵 Playlists cleaned: {len(genre_playlists)}")
+    print(f"📊 Total tracks processed: {total_tracks}")
+    print(f"✅ Tracks kept: {total_kept}")
+    print(f"🗑️  Tracks removed: {total_removed}")
+    print("🎉 Cleanup completed!")
+
+def preview_cleanup() -> None:
+    """Preview what would be cleaned up without actually doing it"""
+    print("👀 Genre Playlist Cleanup Preview")
+    print("=" * 60)
+    
+    # Initialize rate limiter
+    rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
+    
+    # Get existing playlists
+    existing_playlists = get_existing_playlists()
+    
+    # Identify genre playlists
+    genre_playlists = identify_genre_playlists(existing_playlists)
+    
+    if not genre_playlists:
+        print("❌ No genre playlists found")
+        return
+    
+    print(f"🎵 Found {len(genre_playlists)} genre playlists")
+    
+    # Load artist cache
+    artist_cache = load_artist_cache()
+    
+    total_incorrect_tracks = 0
+    
+    for playlist_name, playlist_id in genre_playlists.items():
+        print(f"\n🎵 Previewing: {playlist_name}")
+        
+        # Get playlist genre
+        playlist_genre = get_playlist_genre(playlist_name)
+        
+        # Get all tracks in the playlist
+        all_track_ids = get_playlist_track_ids(playlist_id)
+        
+        incorrect_tracks = []
+        
+        # Sample first 20 tracks for preview
+        sample_tracks = list(all_track_ids)[:20]
+        
+        for track_id in sample_tracks:
+            try:
+                track_data = sp.track(track_id)
+                
+                # Get genres for this track
+                track_genres = []
+                for artist in track_data['artists']:
+                    artist_id = artist['id']
+                    if artist_id in artist_cache:
+                        track_genres.extend(artist_cache[artist_id]['genres'])
+                
+                # Check if track should be in this playlist
+                if not should_track_be_in_playlist(track_genres, playlist_genre):
+                    incorrect_tracks.append(f"{track_data['name']} by {track_data['artists'][0]['name']}")
+                
+                rate_limiter.wait()
+                
+            except Exception as e:
+                continue
+        
+        if incorrect_tracks:
+            print(f"   ❌ Found {len(incorrect_tracks)} incorrect tracks (sample):")
+            for track in incorrect_tracks[:5]:  # Show first 5
+                print(f"      - {track}")
+            if len(incorrect_tracks) > 5:
+                print(f"      ... and {len(incorrect_tracks) - 5} more")
+            total_incorrect_tracks += len(incorrect_tracks)
+        else:
+            print(f"   ✅ No incorrect tracks found in sample")
+    
+    print(f"\n📊 Total incorrect tracks found in samples: {total_incorrect_tracks}")
+    print("💡 Run the full cleanup to remove all incorrect tracks")
+
+def main():
+    """Main function"""
+    import sys
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "--preview":
+        preview_cleanup()
+    else:
+        cleanup_all_genre_playlists()
+
+if __name__ == "__main__":
+    main() 

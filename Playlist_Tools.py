@@ -1,11 +1,7 @@
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
 import time
-import json
-import os
 from typing import Dict, List, Set, Any
-from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, REQUESTS_PER_SECOND
-from spotify_client import sp, get_artist_with_retry
+from config import REQUESTS_PER_SECOND
+from spotify_client import sp
 from Genre_Tools import get_track_genres, load_artist_cache, save_artist_cache, normalize_genre, get_artist_genres
 from collections import defaultdict
 
@@ -151,9 +147,7 @@ def create_genre_playlists(playlist_id: str) -> None:
     genre_tracks: Dict[str, Set[str]] = defaultdict(set)
     
     # Load artist cache
-    artist_cache: Dict[str, List[str]] = load_artist_cache()
-    cache_hits = 0
-    cache_misses = 0
+    artist_cache: Dict[str, Dict[str, Any]] = load_artist_cache()
     
     # Extract all unique artist IDs from tracks
     all_artist_ids: Set[str] = set()
@@ -189,7 +183,10 @@ def create_genre_playlists(playlist_id: str) -> None:
                             genres.append('Japanese Music')
                         
                         # Update cache
-                        artist_cache[artist_id] = genres
+                        artist_cache[artist_id] = {
+                            'genres': genres,
+                            'country': artist.get('country')
+                        }
                 
                 rate_limiter.wait()
                 
@@ -204,41 +201,66 @@ def create_genre_playlists(playlist_id: str) -> None:
                         print(f"Error getting artist {artist_id}: {str(e2)}")
                         continue
     
-    # Process tracks with pre-loaded cache
+    # Process tracks in batches for better performance
     print(f"Processing {len(tracks)} tracks with pre-loaded artist cache...")
-    for i, track in enumerate(tracks):
-        if i % 100 == 0:  
-            print(f"Processing track {i}/{len(tracks)}")
-        
-        if not track['track']:
-            continue
-            
-        # Get genres using pre-loaded artist cache
-        genres = get_track_genres(track, artist_cache)
-        
-        # Track cache stats
-        for artist in track['track']['artists']:
-            if artist['id'] in artist_cache:
-                cache_hits += 1
-            else:
-                cache_misses += 1
-        
-        # Normalize genres and add track to each unique normalized genre
-        normalized_genres: Set[str] = set()
-        for genre in genres:
-            normalized_genres.update(normalize_genre(genre))
-        
-        # Add track to each unique normalized genre
-        for genre in normalized_genres:
-            genre_tracks[genre].add(track['track']['id'])
-        
-        # Save cache periodically (every 200 tracks)
-        if (i + 1) % 200 == 0:
-            save_artist_cache(artist_cache)
-            print(f"Cache stats: {cache_hits} hits, {cache_misses} misses")
+    
+    # Use optimized batch processing
+    genre_tracks = process_tracks_batch_optimized(tracks, artist_cache, batch_size=100)
     
     # Save final cache state
     save_artist_cache(artist_cache)
-    print(f"Final cache stats: {cache_hits} hits, {cache_misses} misses")
     
+    return genre_tracks
+
+def process_tracks_batch_optimized(tracks: List[Dict[str, Any]], artist_cache: Dict[str, Dict[str, Any]], batch_size: int = 100) -> Dict[str, Set[str]]:
+    """Process tracks in optimized batches with efficient genre extraction"""
+    genre_tracks: Dict[str, Set[str]] = defaultdict(set)
+    cache_hits = 0
+    cache_misses = 0
+    
+    print(f"Processing {len(tracks)} tracks in optimized batches of {batch_size}...")
+    
+    for i in range(0, len(tracks), batch_size):
+        batch_tracks = tracks[i:i + batch_size]
+        batch_num = i//batch_size + 1
+        total_batches = (len(tracks) + batch_size - 1)//batch_size
+        
+        print(f"Processing batch {batch_num}/{total_batches} ({len(batch_tracks)} tracks)")
+        
+        # Pre-extract all artist IDs from this batch for efficient lookup
+        batch_artist_ids = set()
+        valid_tracks = []
+        
+        for track in batch_tracks:
+            if track['track']:
+                valid_tracks.append(track)
+                for artist in track['track']['artists']:
+                    batch_artist_ids.add(artist['id'])
+        
+        # Process all tracks in the batch
+        for track in valid_tracks:
+            # Get genres using pre-loaded artist cache
+            genres = get_track_genres(track, artist_cache)
+            
+            # Track cache stats
+            for artist in track['track']['artists']:
+                if artist['id'] in artist_cache:
+                    cache_hits += 1
+                else:
+                    cache_misses += 1
+            
+            # Normalize genres and add track to each unique normalized genre
+            normalized_genres: Set[str] = set()
+            for genre in genres:
+                normalized_genres.update(normalize_genre(genre))
+            
+            # Add track to each unique normalized genre
+            for genre in normalized_genres:
+                genre_tracks[genre].add(track['track']['id'])
+        
+        # Save cache periodically (every batch)
+        save_artist_cache(artist_cache)
+        print(f"  Cache stats: {cache_hits} hits, {cache_misses} misses")
+    
+    print(f"Final cache stats: {cache_hits} hits, {cache_misses} misses")
     return genre_tracks

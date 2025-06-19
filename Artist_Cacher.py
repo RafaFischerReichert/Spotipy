@@ -1,11 +1,12 @@
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Any
 from spotify_client import sp
 from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_genres
-from Playlist_Tools import get_playlist_track_ids, get_existing_playlists, RateLimiter
+from Playlist_Tools import get_playlist_track_ids, RateLimiter
 import time
 from config import PLAYLIST_ID, REQUESTS_PER_SECOND
 from datetime import timedelta
 from tqdm import tqdm
+from WikipediaAPI import get_artist_country_wikidata, get_artist_genres as get_wikipedia_genres
 
 def format_time(seconds: float) -> str:
     """Format seconds into a human readable time string."""
@@ -71,7 +72,7 @@ def cache_artist_genres(playlist_id: str) -> None:
     rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
     
     # Load existing cache
-    artist_cache: Dict[str, List[str]] = load_artist_cache()
+    artist_cache: Dict[str, Dict[str, Any]] = load_artist_cache()
     cache_hits: int = 0
     cache_misses: int = 0
     
@@ -136,20 +137,23 @@ def cache_artist_genres(playlist_id: str) -> None:
                     if artist:  # Check if artist exists
                         artist_id = artist['id']
                         genres = artist['genres']
-                        
-                        # Add custom genres if available
-                        from Artist_Genres import get_custom_artist_genres
-                        custom_genres = get_custom_artist_genres(artist_id)
-                        genres.extend(custom_genres)
-                        
-                        # Add national level genres
-                        if artist.get('country') == 'BR':
-                            genres.append('brazilian music')
-                        elif artist.get('country') == 'JP':
-                            genres.append('Japanese Music')
-                        
+                        # Fetch Wikipedia genres and combine
+                        wikipedia_genres = get_wikipedia_genres(artist['name']) or []
+                        # Combine and deduplicate
+                        all_genres = list(dict.fromkeys(genres + wikipedia_genres))
+                        # Get country from Wikidata
+                        country = get_artist_country_wikidata(artist['name'])
+                        # Add national level genres based on country
+                        if country:
+                            if 'Brazil' in country:
+                                all_genres.append('brazilian music')
+                            elif 'Japan' in country:
+                                all_genres.append('Japanese Music')
                         # Update cache
-                        artist_cache[artist_id] = genres
+                        artist_cache[artist_id] = {
+                            'genres': all_genres,
+                            'country': country
+                        }
                         cache_misses += 1
                 
                 rate_limiter.wait()
@@ -173,10 +177,15 @@ def cache_artist_genres(playlist_id: str) -> None:
                 for artist_id in batch_artist_ids:
                     try:
                         genres = get_artist_genres(artist_id, artist_cache)
+                        # Fetch Wikipedia genres and combine
+                        artist_name = sp.artist(artist_id)['name']
+                        wikipedia_genres = get_wikipedia_genres(artist_name) or []
+                        all_genres = list(dict.fromkeys(genres + wikipedia_genres))
+                        artist_cache[artist_id]['genres'] = all_genres
                         cache_misses += 1
                         rate_limiter.wait()
                     except Exception as e2:
-                        print(f"Error caching artist {artist_id}: {str(e2)}")
+                        print(f"Error getting artist {artist_id}: {str(e2)}")
                         continue
     
     # Save final cache state

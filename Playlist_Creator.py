@@ -1,48 +1,13 @@
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
-from collections import defaultdict
 import time
-import json
-import os
 from typing import Dict, List, Set, Any
-from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, PLAYLIST_ID, REQUESTS_PER_SECOND
+from config import PLAYLIST_ID, REQUESTS_PER_SECOND
 from Playlist_Tools import (
-    get_playlist_tracks,
-    get_track_genres,
-    normalize_genre,
     get_existing_playlists,
     get_playlist_track_ids,
     create_genre_playlists,
     sp,
     RateLimiter
 )
-
-# Initialize Spotify client
-sp: spotipy.Spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
-    client_id=CLIENT_ID,
-    client_secret=CLIENT_SECRET,
-    redirect_uri=REDIRECT_URI,
-    scope='playlist-modify-public playlist-modify-private user-library-read'
-))
-
-# Cache file path
-CACHE_FILE = "track_genre_cache.json"
-
-def load_track_cache() -> Dict[str, List[str]]:
-    """Load the track genre cache from file if it exists."""
-    if os.path.exists(CACHE_FILE):
-        try:
-            with open(CACHE_FILE, 'r') as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            print("Cache file corrupted, starting with empty cache")
-            return {}
-    return {}
-
-def save_track_cache(cache: Dict[str, List[str]]) -> None:
-    """Save the track genre cache to file."""
-    with open(CACHE_FILE, 'w') as f:
-        json.dump(cache, f)
 
 def create_genre_playlists_optimized(playlist_id: str) -> None:
     """Create genre playlists with optimized batch processing and caching"""
