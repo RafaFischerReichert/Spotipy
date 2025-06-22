@@ -8,6 +8,7 @@ from Playlist_Tools import (
     RateLimiter
 )
 from Genre_Tools import load_artist_cache, get_custom_artist_genres
+from WikipediaAPI import get_artist_country_wikidata
 
 
 def rank_playlist_genres(playlist_id: str) -> None:
@@ -50,16 +51,20 @@ def rank_playlist_genres(playlist_id: str) -> None:
                         custom_genres = get_custom_artist_genres(artist_id)
                         genres.extend(custom_genres)
                         
-                        # Add national level genres
-                        if artist.get('country') == 'BR':
-                            genres.append('brazilian music')
-                        elif artist.get('country') == 'JP':
-                            genres.append('Japanese Music')
+                        # Get country from Wikipedia/Wikidata
+                        country = get_artist_country_wikidata(artist['name'])
+                        
+                        # Add national level genres based on Wikipedia country
+                        if country:
+                            if 'Brazil' in country:
+                                genres.append('brazilian music')
+                            elif 'Japan' in country:
+                                genres.append('Japanese Music')
                         
                         # Update cache
                         artist_cache[artist_id] = {
                             'genres': genres,
-                            'country': artist.get('country')
+                            'country': country
                         }
                 
                 rate_limiter.wait()

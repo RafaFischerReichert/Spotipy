@@ -1,6 +1,6 @@
 from typing import Dict, List, Set, Any
 from spotify_client import sp
-from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_genres
+from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_genres, normalize_genre
 from Playlist_Tools import get_playlist_track_ids, RateLimiter
 import time
 from config import PLAYLIST_ID, REQUESTS_PER_SECOND
@@ -141,6 +141,12 @@ def cache_artist_genres(playlist_id: str) -> None:
                         wikipedia_genres = get_wikipedia_genres(artist['name']) or []
                         # Combine and deduplicate
                         all_genres = list(dict.fromkeys(genres + wikipedia_genres))
+                        # Apply normalize_genre to each genre and flatten
+                        normalized = []
+                        for g in all_genres:
+                            normalized.extend(normalize_genre(g))
+                        # Remove duplicates while preserving order
+                        all_genres = list(dict.fromkeys(normalized))
                         # Get country from Wikidata
                         country = get_artist_country_wikidata(artist['name'])
                         # Add national level genres based on country
@@ -181,6 +187,12 @@ def cache_artist_genres(playlist_id: str) -> None:
                         artist_name = sp.artist(artist_id)['name']
                         wikipedia_genres = get_wikipedia_genres(artist_name) or []
                         all_genres = list(dict.fromkeys(genres + wikipedia_genres))
+                        # Apply normalize_genre to each genre and flatten
+                        normalized = []
+                        for g in all_genres:
+                            normalized.extend(normalize_genre(g))
+                        # Remove duplicates while preserving order
+                        all_genres = list(dict.fromkeys(normalized))
                         artist_cache[artist_id]['genres'] = all_genres
                         cache_misses += 1
                         rate_limiter.wait()

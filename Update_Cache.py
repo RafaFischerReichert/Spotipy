@@ -1,9 +1,9 @@
 import time
 from typing import Dict, Any
 from spotify_client import sp, get_artist_with_retry
-from Genre_Tools import load_artist_cache, save_artist_cache, get_custom_artist_genres
+from Genre_Tools import load_artist_cache, save_artist_cache, get_custom_artist_genres, normalize_genre
 from tqdm import tqdm
-from WikipediaAPI import get_artist_genres as get_wikipedia_genres
+from WikipediaAPI import get_artist_genres as get_wikipedia_genres, get_artist_country_wikidata
 
 BATCH_SIZE = 50
 
@@ -29,18 +29,26 @@ if __name__ == "__main__":
                     # Add custom genres if available
                     custom_genres = get_custom_artist_genres(artist_id)
                     all_genres.extend([g for g in custom_genres if g not in all_genres])
-                    # Add national level genres
-                    if artist.get('country') == 'BR':
-                        all_genres.append('brazilian music')
-                    elif artist.get('country') == 'JP':
-                        all_genres.append('Japanese Music')
-                    # Update cache
+                    # Apply normalize_genre to each genre and flatten
+                    normalized = []
+                    for g in all_genres:
+                        normalized.extend(normalize_genre(g))
+                    # Remove duplicates while preserving order
+                    all_genres = list(dict.fromkeys(normalized))
+                    # Get country from Wikipedia/Wikidata
+                    country = get_artist_country_wikidata(artist['name'])
+                    # Add national level genres based on Wikipedia country
+                    if country:
+                        if 'Brazil' in country:
+                            all_genres.append('brazilian music')
+                        elif 'Japan' in country:
+                            all_genres.append('Japanese Music')
                     artist_cache[artist_id] = {
                         'genres': all_genres,
-                        'country': artist.get('country')
+                        'country': country
                     }
                     updated_count += 1
-            time.sleep(0.1)  # Be nice to the API
+            time.sleep(0.1)
         except Exception as e:
             print(f"Error updating batch {i//BATCH_SIZE+1}: {str(e)}")
             # Fallback to individual requests
@@ -53,13 +61,21 @@ if __name__ == "__main__":
                     all_genres = list(dict.fromkeys(genres + wikipedia_genres))
                     custom_genres = get_custom_artist_genres(artist_id)
                     all_genres.extend([g for g in custom_genres if g not in all_genres])
-                    if artist_data.get('country') == 'BR':
-                        all_genres.append('brazilian music')
-                    elif artist_data.get('country') == 'JP':
-                        all_genres.append('Japanese Music')
+                    # Apply normalize_genre to each genre and flatten
+                    normalized = []
+                    for g in all_genres:
+                        normalized.extend(normalize_genre(g))
+                    all_genres = list(dict.fromkeys(normalized))
+                    # Get country from Wikipedia/Wikidata
+                    country = get_artist_country_wikidata(artist_data['name'])
+                    if country:
+                        if 'Brazil' in country:
+                            all_genres.append('brazilian music')
+                        elif 'Japan' in country:
+                            all_genres.append('Japanese Music')
                     artist_cache[artist_id] = {
                         'genres': all_genres,
-                        'country': artist_data.get('country')
+                        'country': country
                     }
                     updated_count += 1
                     time.sleep(0.1)
@@ -69,4 +85,4 @@ if __name__ == "__main__":
 
     save_artist_cache(artist_cache)
     elapsed = time.time() - start_time
-    print(f"\n✅ Updated {updated_count} artists in {elapsed:.1f} seconds.") 
+    print(f"\nUpdated {updated_count} artists in {elapsed:.1f} seconds") 

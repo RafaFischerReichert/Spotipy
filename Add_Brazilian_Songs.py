@@ -20,8 +20,9 @@ def get_brazilian_artists() -> Set[str]:
                 brazilian_artists.add(artist_id)
                 break
         
-        # Also check country
-        if data.get('country') == 'BR':
+        # Also check country from Wikipedia
+        country = data.get('country')
+        if country and 'Brazil' in country:
             brazilian_artists.add(artist_id)
     
     return brazilian_artists

@@ -1,29 +1,31 @@
 import json
 import os
+import re
 from typing import Dict, List, Set, Optional, Any
 from spotify_client import sp, get_artist_with_retry
 from Artist_Genres import get_custom_artist_genres
+from WikipediaAPI import get_artist_country_wikidata
 
 # Cache file paths
 ARTIST_CACHE_FILE = "artist_genre_cache.json"
 
 def load_artist_cache() -> Dict[str, Dict[str, Any]]:
-    """Load the artist cache from file if it exists. Cache now stores both genres and country."""
+    """Load the artist cache from file if it exists. Cache stores genres and country from Wikipedia."""
     if os.path.exists(ARTIST_CACHE_FILE):
         try:
             with open(ARTIST_CACHE_FILE, 'r') as f:
                 cache_data = json.load(f)
-                # Handle migration from old format (list of genres) to new format (dict with genres and country)
+                # Handle migration from old format
                 migrated_cache = {}
                 for artist_id, data in cache_data.items():
                     if isinstance(data, list):
                         # Old format - convert to new format
                         migrated_cache[artist_id] = {
                             'genres': data,
-                            'country': None  # Country info not available in old cache
+                            'country': None
                         }
                     else:
-                        # New format - keep as is
+                        # Keep existing data
                         migrated_cache[artist_id] = data
                 return migrated_cache
         except json.JSONDecodeError:
@@ -78,18 +80,20 @@ def get_artist_genres(artist_id: str, artist_cache: Optional[Dict[str, Dict[str,
     custom_genres = get_custom_artist_genres(artist_id)
     genres.extend(custom_genres)
     
-    # Add national level genres
-    if artist_data.get('id') == '5APvSx4S3x8Gd8jfaWL4Qi':
-        genres.append('brazilian music')
-    elif artist_data.get('country') == 'BR':
-        genres.append('brazilian music')
-    elif artist_data.get('country') == 'JP':
-        genres.append('Japanese Music')
+    # Get country from Wikipedia/Wikidata
+    country = get_artist_country_wikidata(artist_data['name'])
     
-    # Update cache with both genres and country
+    # Add national level genres based on Wikipedia country
+    if country:
+        if 'Brazil' in country:
+            genres.append('brazilian music')
+        elif 'Japan' in country:
+            genres.append('Japanese Music')
+    
+    # Update cache with genres and Wikipedia country
     artist_cache[artist_id] = {
         'genres': genres,
-        'country': artist_data.get('country')
+        'country': country
     }
     save_artist_cache(artist_cache)
     
@@ -123,16 +127,20 @@ def get_artist_genres_batch(artist_ids: List[str], artist_cache: Optional[Dict[s
                 custom_genres = get_custom_artist_genres(artist_id)
                 genres.extend(custom_genres)
                 
-                # Add national level genres
-                if artist.get('country') == 'BR':
-                    genres.append('brazilian music')
-                elif artist.get('country') == 'JP':
-                    genres.append('Japanese Music')
+                # Get country from Wikipedia/Wikidata
+                country = get_artist_country_wikidata(artist['name'])
                 
-                # Update cache with both genres and country
+                # Add national level genres based on Wikipedia country
+                if country:
+                    if 'Brazil' in country:
+                        genres.append('brazilian music')
+                    elif 'Japan' in country:
+                        genres.append('Japanese Music')
+                
+                # Update cache with genres and Wikipedia country
                 artist_cache[artist_id] = {
                     'genres': genres,
-                    'country': artist.get('country')
+                    'country': country
                 }
                 cached_artists[artist_id] = genres
         
@@ -142,7 +150,7 @@ def get_artist_genres_batch(artist_ids: List[str], artist_cache: Optional[Dict[s
     return cached_artists
 
 def get_track_genres(track: Dict[str, Any], artist_cache: Optional[Dict[str, Dict[str, Any]]] = None) -> List[str]:
-    """Get genres for a track by looking up all artists, using cache if provided. Always tag Brazilian/Japanese artists."""
+    """Get genres for a track by looking up all artists, using cache if provided."""
     if not track['track']:
         return []
     
@@ -162,34 +170,14 @@ def get_track_genres(track: Dict[str, Any], artist_cache: Optional[Dict[str, Dic
         if artist_id in artist_genres:
             all_genres.update(artist_genres[artist_id])
         
-        # Check country info for tagging
-        country = None
-        
-        # Try to get country from cache first
+        # Check cached country info for tagging
         if artist_cache and artist_id in artist_cache:
             country = artist_cache[artist_id].get('country')
-        
-        # If not in cache, try artist object
-        if not country and 'country' in artist:
-            country = artist['country']
-        
-        # If still no country, try to fetch artist data
-        if not country:
-            try:
-                from spotify_client import sp
-                artist_data = sp.artist(artist_id)
-                country = artist_data.get('country')
-                # Update cache with country info
-                if artist_cache and artist_id in artist_cache:
-                    artist_cache[artist_id]['country'] = country
-                    save_artist_cache(artist_cache)
-            except Exception:
-                pass
-        
-        if country == 'BR':
-            is_brazilian = True
-        if country == 'JP':
-            is_japanese = True
+            if country:
+                if 'Brazil' in country:
+                    is_brazilian = True
+                elif 'Japan' in country:
+                    is_japanese = True
     
     if is_brazilian:
         all_genres.add('brazilian music')
@@ -200,11 +188,16 @@ def get_track_genres(track: Dict[str, Any], artist_cache: Optional[Dict[str, Dic
 
 def normalize_genre(genre: str) -> List[str]:
     """Normalize genre names to combine similar genres"""
+    # Drop unwanted tags
+    if genre.strip().lower() in ["name", "genres"]:
+        return []
+    # First, clean the genre by removing " music" from the end (except Brazilian and Japanese Music)
+    original_genre = genre
+    if genre.lower() not in ['brazilian music', 'japanese music']:
+        genre = re.sub(r' music$', '', genre, flags=re.IGNORECASE).strip()
+    
     genre_lower = genre.lower()
     result = set()  # Using set to automatically handle duplicates
-    
-    # Always add the original genre first
-    result.add(genre)
     
     # For Brazilian and Japanese, always add the title-case version
     if genre_lower == 'brazilian music':
@@ -222,36 +215,31 @@ def normalize_genre(genre: str) -> List[str]:
         'folk': ['folk'],
         'industrial': ['industrial'],
         'indie and alternative': ['alternative', 'indie', 'alt'],
-        'rock': ['rock', 'hardcore', 'grunge'],
+        'rock': ['rock', 'hardcore', 'grunge', 'metal'],
         'glam': ['glam'],
         'country': ['country'],
         'sertanejo': ['sertanejo'],
         'mpb': ['mpb'],
         '(Rhythm and )Blues': ['blues', 'r&b', 'rhythm and blues'],
-        'Japanese Music': ['kei', 'japanese music', 'kayokyoku', 'j-pop', 'shibuya-kei', 'j-rock', 'japanese indie', 'j-rap', 'vocaloid'],
+        'Japanese Music': ['kei', 'japanese music', 'kayokyoku', 'j-pop', 'shibuya-kei', 'j-rock', 'anime', 'japanese indie', 'j-rap', 'vocaloid'],
         'comedy': ['comedy', 'meme']
     }
     
-    # Check for genre mappings
-    for normalized, keywords in genre_mappings.items():
-        if any(keyword in genre_lower for keyword in keywords):
-            result.add(normalized)
-    
-    # Special cases
+    # Special cases (these should remove the original genre)
     special_cases = {
-        'Brazilian Music': ['brazilian music'],
-        'brazilian hip hop': ['brazilian hip hop', 'brazilian trap'],
-        'anime': ['anime', 'anime rap'],
-        'celtic rock': ['celtic'],
+        'anime': ['anime rap'],
         'electro and edm': ['electro', 'electronica', 'edm'],
         'hardcore': ['hardcore punk'],
         'drum and bass': ['bass music'],
-        'medieval': ['medieval metal']
+        'mpb': ['música popular brasileira']
     }
     
+    # Check if this is a special case first
+    is_special_case = False
     for normalized, matches in special_cases.items():
         if genre_lower in matches:
             result.add(normalized)
+            is_special_case = True
             if normalized == 'brazilian hip hop':
                 result.add('rap and hip hop')
             elif normalized == 'anime':
@@ -267,8 +255,24 @@ def normalize_genre(genre: str) -> List[str]:
             elif normalized == 'vocaloid':
                 result.add('Japanese Music')
     
+    # Check for genre mappings (only if not a special case)
+    is_mapping_case = False
+    if not is_special_case:
+        for normalized, keywords in genre_mappings.items():
+            if any(keyword in genre_lower for keyword in keywords):
+                result.add(normalized)
+                is_mapping_case = True
+    
     # Add combined tag for Japanese music
     if 'japanese music' in genre_lower or 'Japanese Music' in result:
         result.add('Anime + Japanese Music')
+    
+    # Preserve original genre for mapping cases or when no mappings found
+    if is_mapping_case or (not is_special_case and not is_mapping_case):
+        result.add(genre)
+    
+    # For special cases, ensure the original genre is removed
+    if is_special_case and genre in result:
+        result.remove(genre)
     
     return list(result) 

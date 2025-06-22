@@ -37,7 +37,7 @@ def get_artist_genres(artist_name):
             if template.has("genre"):
                 genres_raw = template.get("genre").value
                 genres = parse_complex_genres(genres_raw)
-                return genres
+                return [genre.lower() for genre in genres]
 
     return None
 

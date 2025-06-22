@@ -4,6 +4,7 @@ from config import REQUESTS_PER_SECOND
 from spotify_client import sp
 from Genre_Tools import get_track_genres, load_artist_cache, save_artist_cache, normalize_genre, get_artist_genres
 from collections import defaultdict
+from WikipediaAPI import get_artist_country_wikidata
 
 class RateLimiter:
     def __init__(self, requests_per_second: float = REQUESTS_PER_SECOND):
@@ -176,16 +177,20 @@ def create_genre_playlists(playlist_id: str) -> None:
                         custom_genres = get_custom_artist_genres(artist_id)
                         genres.extend(custom_genres)
                         
-                        # Add national level genres
-                        if artist.get('country') == 'BR':
-                            genres.append('brazilian music')
-                        elif artist.get('country') == 'JP':
-                            genres.append('Japanese Music')
+                        # Get country from Wikipedia/Wikidata
+                        country = get_artist_country_wikidata(artist['name'])
+                        
+                        # Add national level genres based on Wikipedia country
+                        if country:
+                            if 'Brazil' in country:
+                                genres.append('brazilian music')
+                            elif 'Japan' in country:
+                                genres.append('Japanese Music')
                         
                         # Update cache
                         artist_cache[artist_id] = {
                             'genres': genres,
-                            'country': artist.get('country')
+                            'country': country
                         }
                 
                 rate_limiter.wait()
