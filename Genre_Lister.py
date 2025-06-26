@@ -6,7 +6,7 @@ from Playlist_Tools import (
     sp,
     RateLimiter
 )
-from Genre_Tools import load_artist_cache
+from Genre_Tools import load_artist_cache, normalize_genre
 
 def list_playlist_genres(playlist_id: str) -> None:
     """List all unique genres found in a playlist with optimized batch processing"""
@@ -16,76 +16,36 @@ def list_playlist_genres(playlist_id: str) -> None:
     # Get all tracks from the playlist
     tracks: List[Dict[str, Any]] = get_playlist_tracks(playlist_id)
     
-    # Set to store unique genres
-    unique_genres: Set[str] = set()
-    
     # Load artist cache for better performance
     artist_cache: Dict[str, Dict[str, Any]] = load_artist_cache()
     
-    # Extract all unique artist IDs from tracks for batch processing
-    all_artist_ids: Set[str] = set()
-    for track in tracks:
-        if track['track']:
-            for artist in track['track']['artists']:
-                all_artist_ids.add(artist['id'])
-    
-    # Pre-load uncached artists in batches
-    uncached_artist_ids = [aid for aid in all_artist_ids if aid not in artist_cache]
-    if uncached_artist_ids:
-        print(f"Pre-loading {len(uncached_artist_ids)} uncached artists...")
-        
-        for i in range(0, len(uncached_artist_ids), 50):
-            batch_artist_ids = uncached_artist_ids[i:i + 50]
-            try:
-                artists = sp.artists(batch_artist_ids)
-                
-                for artist in artists['artists']:
-                    if artist:  # Check if artist exists
-                        artist_id = artist['id']
-                        genres = artist['genres']
-                        
-                        # Add custom genres if available
-                        from Artist_Genres import get_custom_artist_genres
-                        custom_genres = get_custom_artist_genres(artist_id)
-                        genres.extend(custom_genres)
-                        
-                        # Get country from Wikipedia/Wikidata
-                        from WikipediaAPI import get_artist_country_wikidata
-                        country = get_artist_country_wikidata(artist['name'])
-                        
-                        # Add national level genres based on Wikipedia country
-                        if country:
-                            if 'Brazil' in country:
-                                genres.append('brazilian music')
-                            elif 'Japan' in country:
-                                genres.append('Japanese Music')
-                        
-                        # Update cache
-                        artist_cache[artist_id] = {
-                            'genres': genres,
-                            'country': country
-                        }
-                
-                rate_limiter.wait()
-                
-            except Exception as e:
-                print(f"Error getting batch of artists: {str(e)}")
-                continue
-    
     # Process tracks with pre-loaded cache
     print(f"Processing {len(tracks)} tracks with pre-loaded artist cache...")
-    for i, track in enumerate(tracks):
-        if i % 100 == 0:
-            print(f"Processing track {i}/{len(tracks)}")
-        
-        genres: List[str] = get_track_genres(track, artist_cache)
-        unique_genres.update(genres)
+
+    track_genres_map: Dict[str, List[str]] = {}
+    # Step 1: Collect raw genres for all tracks
+    for track in tracks:
+        if track and track['track']:
+            track_id = track['track']['id']
+            raw_genres = get_track_genres(track, artist_cache)
+            track_genres_map[track_id] = raw_genres
+
+    # Step 2: Create a normalization map for all unique raw genres
+    all_raw_genres = set(g for genres in track_genres_map.values() for g in genres)
+    normalization_map = {genre: normalize_genre(genre) for genre in all_raw_genres}
+
+    # Step 3: Collect all unique normalized genres using the map
+    unique_normalized_genres: Set[str] = set()
+    for raw_genres in track_genres_map.values():
+        for raw_genre in raw_genres:
+            normalized_genres = normalization_map.get(raw_genre, [])
+            unique_normalized_genres.update(normalized_genres)
     
     # Print results
     print("\nUnique genres found in playlist:")
-    for genre in sorted(unique_genres):
+    for genre in sorted(unique_normalized_genres):
         print(f"- {genre}")
-    print(f"\nTotal unique genres: {len(unique_genres)}")
+    print(f"\nTotal unique genres: {len(unique_normalized_genres)}")
 
 if __name__ == "__main__":
     from config import PLAYLIST_ID

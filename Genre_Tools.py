@@ -85,10 +85,14 @@ def get_artist_genres(artist_id: str, artist_cache: Optional[Dict[str, Dict[str,
     
     # Add national level genres based on Wikipedia country
     if country:
-        if 'Brazil' in country:
-            genres.append('brazilian music')
-        elif 'Japan' in country:
+        genres_lower = [g.lower() for g in genres]
+        if 'brazil' in country and 'brazilian music' not in genres_lower:
+            genres.append('Brazilian Music')
+        elif 'japan' in country and 'japanese music' not in genres_lower:
             genres.append('Japanese Music')
+    
+    # Deduplicate hyphen genres before saving
+    genres = deduplicate_hyphen_genres(genres)
     
     # Update cache with genres and Wikipedia country
     artist_cache[artist_id] = {
@@ -131,11 +135,15 @@ def get_artist_genres_batch(artist_ids: List[str], artist_cache: Optional[Dict[s
                 country = get_artist_country_wikidata(artist['name'])
                 
                 # Add national level genres based on Wikipedia country
+                genres_lower = [g.lower() for g in genres]
                 if country:
-                    if 'Brazil' in country:
-                        genres.append('brazilian music')
-                    elif 'Japan' in country:
+                    if 'brazil' in country and 'brazilian music' not in genres_lower:
+                        genres.append('Brazilian Music')
+                    elif 'japan' in country and 'japanese music' not in genres_lower:
                         genres.append('Japanese Music')
+                
+                # Deduplicate hyphen genres before saving
+                genres = deduplicate_hyphen_genres(genres)
                 
                 # Update cache with genres and Wikipedia country
                 artist_cache[artist_id] = {
@@ -164,6 +172,7 @@ def get_track_genres(track: Dict[str, Any], artist_cache: Optional[Dict[str, Dic
     all_genres: Set[str] = set()
     is_brazilian = False
     is_japanese = False
+    is_scandinavian = False
     
     for artist in track['track']['artists']:
         artist_id = artist['id']
@@ -178,11 +187,21 @@ def get_track_genres(track: Dict[str, Any], artist_cache: Optional[Dict[str, Dic
                     is_brazilian = True
                 elif 'Japan' in country:
                     is_japanese = True
+                elif country in ['Sweden', 'Norway', 'Iceland', 'Finland', 'Denmark']:
+                    is_scandinavian = True
     
     if is_brazilian:
-        all_genres.add('brazilian music')
+        # Only add if not already present (case-insensitive)
+        if not any(g.lower() == 'brazilian music' for g in all_genres):
+            all_genres.add('Brazilian Music')
     if is_japanese:
-        all_genres.add('Japanese Music')
+        if not any(g.lower() == 'japanese music' for g in all_genres):
+            all_genres.add('Japanese Music')
+    if is_scandinavian:
+        # Check if any of the track's genres normalize to 'metal'
+        is_metal = any('metal' in normalize_genre(g) for g in all_genres)
+        if is_metal:
+            all_genres.add('scandinavian metal')
     
     return list(all_genres)
 
@@ -213,6 +232,7 @@ def normalize_genre(genre: str) -> List[str]:
         'emo': ['emo'],
         'rap and hip hop': ['rap', 'hip hop', 'hip-hop'],
         'folk': ['folk'],
+        'punk': ['punk'],
         'industrial': ['industrial'],
         'indie and alternative': ['alternative', 'indie', 'alt'],
         'rock': ['rock', 'hardcore', 'grunge', 'metal'],
@@ -231,7 +251,9 @@ def normalize_genre(genre: str) -> List[str]:
         'electro and edm': ['electro', 'electronica', 'edm'],
         'hardcore': ['hardcore punk'],
         'drum and bass': ['bass music'],
-        'mpb': ['música popular brasileira']
+        'mpb': ['música popular brasileira'],
+        '(Rhythm And )Blues': ['contemporary r&b'],
+        'rap and hip hop': ['hip-hop', 'hip hop']
     }
     
     # Check if this is a special case first
@@ -275,4 +297,19 @@ def normalize_genre(genre: str) -> List[str]:
     if is_special_case and genre in result:
         result.remove(genre)
     
-    return list(result) 
+    return list(result)
+
+def deduplicate_hyphen_genres(genres: List[str]) -> List[str]:
+    """
+    Remove hyphenated genres if the same genre exists in the list without the hyphen.
+    E.g., if both 'pop-rock' and 'pop rock' are present, remove 'pop-rock'.
+    Keeps the first occurrence (hyphenated or not) if only one exists.
+    """
+    genre_set = set(genres)
+    to_remove = set()
+    for genre in genres:
+        if '-' in genre:
+            no_hyphen = genre.replace('-', ' ')
+            if no_hyphen in genre_set:
+                to_remove.add(genre)
+    return [g for g in genres if g not in to_remove] 

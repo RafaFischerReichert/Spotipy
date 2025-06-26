@@ -1,6 +1,6 @@
 from typing import Dict, List, Set, Any
 from spotify_client import sp
-from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_genres, normalize_genre
+from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_genres, normalize_genre, deduplicate_hyphen_genres
 from Playlist_Tools import get_playlist_track_ids, RateLimiter
 import time
 from config import PLAYLIST_ID, REQUESTS_PER_SECOND
@@ -155,6 +155,8 @@ def cache_artist_genres(playlist_id: str) -> None:
                                 all_genres.append('brazilian music')
                             elif 'Japan' in country:
                                 all_genres.append('Japanese Music')
+                        # Deduplicate hyphen genres before saving
+                        all_genres = deduplicate_hyphen_genres(all_genres)
                         # Update cache
                         artist_cache[artist_id] = {
                             'genres': all_genres,
@@ -193,6 +195,8 @@ def cache_artist_genres(playlist_id: str) -> None:
                             normalized.extend(normalize_genre(g))
                         # Remove duplicates while preserving order
                         all_genres = list(dict.fromkeys(normalized))
+                        # Deduplicate hyphen genres before saving
+                        all_genres = deduplicate_hyphen_genres(all_genres)
                         artist_cache[artist_id]['genres'] = all_genres
                         cache_misses += 1
                         rate_limiter.wait()

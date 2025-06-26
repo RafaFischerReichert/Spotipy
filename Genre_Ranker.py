@@ -7,7 +7,7 @@ from Playlist_Tools import (
     sp,
     RateLimiter
 )
-from Genre_Tools import load_artist_cache, get_custom_artist_genres
+from Genre_Tools import load_artist_cache, get_custom_artist_genres, normalize_genre
 from WikipediaAPI import get_artist_country_wikidata
 
 
@@ -75,12 +75,30 @@ def rank_playlist_genres(playlist_id: str) -> None:
     
     # Process tracks with pre-loaded cache
     print(f"Processing {len(tracks)} tracks with pre-loaded artist cache...")
-    for i, track in enumerate(tracks):
-        if i % 100 == 0:
-            print(f"Processing track {i}/{len(tracks)}")
+
+    track_genres_map: Dict[str, List[str]] = {}
+    # Step 1: Collect raw genres for all tracks
+    for track in tracks:
+        if track and track['track']:
+            track_id = track['track']['id']
+            raw_genres = get_track_genres(track, artist_cache)
+            track_genres_map[track_id] = raw_genres
+
+    # Step 2: Create a normalization map for all unique raw genres
+    all_raw_genres = set(g for genres in track_genres_map.values() for g in genres)
+    normalization_map = {genre: normalize_genre(genre) for genre in all_raw_genres}
+
+    # Step 3: Count genres using the normalization map
+    genre_counts: Dict[str, int] = defaultdict(int)
+    for track_id, raw_genres in track_genres_map.items():
+        # Use a set to count each normalized genre only once per track
+        normalized_genres_per_track: Set[str] = set()
+        for raw_genre in raw_genres:
+            normalized_genres = normalization_map.get(raw_genre, [])
+            for normalized_genre in normalized_genres:
+                normalized_genres_per_track.add(normalized_genre)
         
-        genres: List[str] = get_track_genres(track, artist_cache)
-        for genre in genres:
+        for genre in normalized_genres_per_track:
             genre_counts[genre] += 1
     
     # Sort genres by count (descending)

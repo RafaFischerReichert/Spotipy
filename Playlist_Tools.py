@@ -220,52 +220,30 @@ def create_genre_playlists(playlist_id: str) -> None:
 def process_tracks_batch_optimized(tracks: List[Dict[str, Any]], artist_cache: Dict[str, Dict[str, Any]], batch_size: int = 100) -> Dict[str, Set[str]]:
     """Process tracks in optimized batches with efficient genre extraction"""
     genre_tracks: Dict[str, Set[str]] = defaultdict(set)
-    cache_hits = 0
-    cache_misses = 0
-    
+    track_genres_map: Dict[str, List[str]] = {}
+
     print(f"Processing {len(tracks)} tracks in optimized batches of {batch_size}...")
+
+    # Step 1: Collect raw genres for all tracks
+    for track in tracks:
+        if track['track']:
+            track_id = track['track']['id']
+            raw_genres = get_track_genres(track, artist_cache)
+            track_genres_map[track_id] = raw_genres
+
+    # Step 2: Create a normalization map for all unique raw genres
+    all_raw_genres = set(g for genres in track_genres_map.values() for g in genres)
+    normalization_map = {genre: normalize_genre(genre) for genre in all_raw_genres}
+
+    # Step 3: Populate genre_tracks using the normalization map
+    for track in tracks:
+        if track['track']:
+            track_id = track['track']['id']
+            raw_genres = track_genres_map.get(track_id, [])
+            
+            for raw_genre in raw_genres:
+                normalized_genres = normalization_map.get(raw_genre, [])
+                for normalized_genre in normalized_genres:
+                    genre_tracks[normalized_genre].add(track_id)
     
-    for i in range(0, len(tracks), batch_size):
-        batch_tracks = tracks[i:i + batch_size]
-        batch_num = i//batch_size + 1
-        total_batches = (len(tracks) + batch_size - 1)//batch_size
-        
-        print(f"Processing batch {batch_num}/{total_batches} ({len(batch_tracks)} tracks)")
-        
-        # Pre-extract all artist IDs from this batch for efficient lookup
-        batch_artist_ids = set()
-        valid_tracks = []
-        
-        for track in batch_tracks:
-            if track['track']:
-                valid_tracks.append(track)
-                for artist in track['track']['artists']:
-                    batch_artist_ids.add(artist['id'])
-        
-        # Process all tracks in the batch
-        for track in valid_tracks:
-            # Get genres using pre-loaded artist cache
-            genres = get_track_genres(track, artist_cache)
-            
-            # Track cache stats
-            for artist in track['track']['artists']:
-                if artist['id'] in artist_cache:
-                    cache_hits += 1
-                else:
-                    cache_misses += 1
-            
-            # Normalize genres and add track to each unique normalized genre
-            normalized_genres: Set[str] = set()
-            for genre in genres:
-                normalized_genres.update(normalize_genre(genre))
-            
-            # Add track to each unique normalized genre
-            for genre in normalized_genres:
-                genre_tracks[genre].add(track['track']['id'])
-        
-        # Save cache periodically (every batch)
-        save_artist_cache(artist_cache)
-        print(f"  Cache stats: {cache_hits} hits, {cache_misses} misses")
-    
-    print(f"Final cache stats: {cache_hits} hits, {cache_misses} misses")
     return genre_tracks

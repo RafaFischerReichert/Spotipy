@@ -1,7 +1,7 @@
 import time
 from typing import Dict, Any
 from spotify_client import sp, get_artist_with_retry
-from Genre_Tools import load_artist_cache, save_artist_cache, get_custom_artist_genres, normalize_genre
+from Genre_Tools import load_artist_cache, save_artist_cache, get_custom_artist_genres, normalize_genre, deduplicate_hyphen_genres
 from tqdm import tqdm
 from WikipediaAPI import get_artist_genres as get_wikipedia_genres, get_artist_country_wikidata
 
@@ -35,14 +35,18 @@ if __name__ == "__main__":
                         normalized.extend(normalize_genre(g))
                     # Remove duplicates while preserving order
                     all_genres = list(dict.fromkeys(normalized))
-                    # Get country from Wikipedia/Wikidata
-                    country = get_artist_country_wikidata(artist['name'])
+                    # Get country from cache or Wikipedia/Wikidata
+                    country = artist_cache.get(artist_id, {}).get('country')
+                    if not country:
+                        country = get_artist_country_wikidata(artist['name'])
                     # Add national level genres based on Wikipedia country
                     if country:
                         if 'Brazil' in country:
                             all_genres.append('brazilian music')
                         elif 'Japan' in country:
                             all_genres.append('Japanese Music')
+                    # Deduplicate hyphen genres before saving
+                    all_genres = deduplicate_hyphen_genres(all_genres)
                     artist_cache[artist_id] = {
                         'genres': all_genres,
                         'country': country
@@ -66,13 +70,17 @@ if __name__ == "__main__":
                     for g in all_genres:
                         normalized.extend(normalize_genre(g))
                     all_genres = list(dict.fromkeys(normalized))
-                    # Get country from Wikipedia/Wikidata
-                    country = get_artist_country_wikidata(artist_data['name'])
+                    # Get country from cache or Wikipedia/Wikidata
+                    country = artist_cache.get(artist_id, {}).get('country')
+                    if not country:
+                        country = get_artist_country_wikidata(artist_data['name'])
                     if country:
                         if 'Brazil' in country:
                             all_genres.append('brazilian music')
                         elif 'Japan' in country:
                             all_genres.append('Japanese Music')
+                    # Deduplicate hyphen genres before saving
+                    all_genres = deduplicate_hyphen_genres(all_genres)
                     artist_cache[artist_id] = {
                         'genres': all_genres,
                         'country': country
