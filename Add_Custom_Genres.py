@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+# ---
+# Add_Custom_Genres.py
+# Allows manual addition, update, and removal of custom genres for artists.
+# Includes features to search for artists, view and edit custom genres, and store them in a JSON file.
+# ---
+
 """
 Add_Custom_Genres.py - Manually add custom genres for artists
 

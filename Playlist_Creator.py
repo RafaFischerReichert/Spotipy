@@ -1,3 +1,8 @@
+# ---
+# Playlist_Creator.py
+# Creates genre playlists from a source playlist, using optimized batch processing and caching.
+# Minimizes API calls and speeds up playlist creation by batching and checking for existing playlists.
+# ---
 import time
 from typing import Dict, List, Set, Any
 from config import PLAYLIST_ID, REQUESTS_PER_SECOND

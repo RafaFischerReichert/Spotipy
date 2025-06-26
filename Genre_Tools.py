@@ -1,3 +1,9 @@
+# ---
+# Genre_Tools.py
+# Provides core functions for loading, saving, and managing the artist genre cache.
+# Includes batch Spotify API requests, genre normalization, deduplication, and Wikipedia lookups for country and genres.
+# Used by most scripts for efficient genre and artist data handling.
+# ---
 import json
 import os
 import re

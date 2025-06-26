@@ -1,3 +1,8 @@
+# ---
+# List_Empty_Cache.py
+# Lists all artists in the cache without genres, and exports them to JSON and text files.
+# Useful for identifying missing genre data and preparing for manual or automated genre assignment.
+# ---
 from typing import Dict, Any
 import json
 from Playlist_Tools import sp

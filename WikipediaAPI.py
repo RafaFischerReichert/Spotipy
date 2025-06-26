@@ -1,3 +1,8 @@
+# ---
+# WikipediaAPI.py
+# Provides functions to fetch genres and country information for artists from Wikipedia and Wikidata.
+# Used to supplement Spotify data with additional genre and country info for improved accuracy.
+# ---
 import requests
 import mwparserfromhell
 import re

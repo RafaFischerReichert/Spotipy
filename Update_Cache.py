@@ -1,3 +1,8 @@
+# ---
+# Update_Cache.py
+# Updates all artists in the cache with the latest genres and country info from Spotify and Wikipedia.
+# Uses batch processing for efficiency and saves the updated cache.
+# ---
 import time
 from typing import Dict, Any
 from spotify_client import sp, get_artist_with_retry

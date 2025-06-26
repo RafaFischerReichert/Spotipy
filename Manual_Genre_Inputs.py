@@ -1,3 +1,8 @@
+# ---
+# Manual_Genre_Inputs.py
+# Allows manual input of genres for artists missing genre data in the cache.
+# Prompts the user for genres, normalizes and deduplicates them, and updates the cache.
+# ---
 import json
 import os
 from typing import Dict, List, Set, Optional, Any

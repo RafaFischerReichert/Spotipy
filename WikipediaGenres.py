@@ -1,3 +1,8 @@
+# ---
+# WikipediaGenres.py
+# Uses Wikipedia to fetch and normalize genres for artists missing genre data.
+# Saves the results to a JSON file for further use in the genre cache or custom genres.
+# ---
 import json
 import re
 import time

@@ -1,3 +1,9 @@
+# ---
+# Artist_Cacher.py
+# Caches genres and country info for all artists in a playlist.
+# Uses batch Spotify API requests and Wikipedia lookups to optimize API usage and speed up genre-based operations.
+# Updates and saves the artist cache for use by other scripts.
+# ---
 from typing import Dict, List, Set, Any
 from spotify_client import sp
 from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_genres, normalize_genre, deduplicate_hyphen_genres

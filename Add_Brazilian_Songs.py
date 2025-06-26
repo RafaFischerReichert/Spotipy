@@ -1,3 +1,9 @@
+# ---
+# Add_Brazilian_Songs.py
+# Adds all tracks by Brazilian artists from the source playlist to a 'Brazilian Music' playlist.
+# Brazilian artists are identified by genre or country in the artist cache.
+# Tracks are added in batches, skipping those already present in the playlist.
+# ---
 import time
 from typing import Dict, List, Set, Any
 from spotify_client import sp

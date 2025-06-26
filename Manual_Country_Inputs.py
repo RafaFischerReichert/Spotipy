@@ -1,3 +1,8 @@
+# ---
+# Manual_Country_Inputs.py
+# Prompts the user to manually input missing country information for artists in the cache.
+# Updates the cache with user-provided country data for each artist.
+# ---
 from Genre_Tools import load_artist_cache, save_artist_cache
 from spotify_client import sp
 

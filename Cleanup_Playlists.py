@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
-"""
-Cleanup_Playlists.py - Cleans up incorrect track additions from genre playlists
-
-This script:
-1. Identifies genre playlists that may have incorrect tracks
-2. Removes tracks that don't belong to the exact genre of the playlist
-3. Uses the corrected matching logic to ensure only proper tracks remain
-4. Provides options for different cleanup strategies
-"""
+# ---
+# Cleanup_Playlists.py
+# Cleans up genre playlists by removing tracks that do not match the playlist's genre.
+# Uses improved matching logic and batch operations to ensure only correct tracks remain in each genre playlist.
+# ---
 
 from typing import Dict, List
 from config import REQUESTS_PER_SECOND

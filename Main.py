@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""
-Main.py - Orchestrates the entire genre playlist creation process
-
-This script:
-1. Creates genre playlists from the source playlist
-2. Handles all the necessary caching and optimization
-"""
+# ---
+# Main.py
+# Orchestrates the entire genre playlist creation process.
+# Creates genre playlists, manages caching, and prints summary statistics for artists and playlists.
+# ---
 
 import os
 import sys

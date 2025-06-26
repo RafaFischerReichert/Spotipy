@@ -1,3 +1,8 @@
+# ---
+# Mess_Lister.py
+# Lists and exports artists with more than a specified number of genres.
+# Useful for identifying and analyzing artists with excessive or messy genre assignments in the cache.
+# ---
 import json
 from typing import List, Dict
 from Genre_Tools import load_artist_cache

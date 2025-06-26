@@ -1,3 +1,8 @@
+# ---
+# Artist_Fixes.py
+# Fixes the artist cache by applying custom genre mappings to artists with empty genre arrays.
+# Provides statistics on the cache before and after fixing, and saves the updated cache.
+# ---
 import json
 import os
 from Artist_Genres import get_custom_artist_genres

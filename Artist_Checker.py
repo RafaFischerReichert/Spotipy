@@ -1,3 +1,8 @@
+# ---
+# Artist_Checker.py
+# Provides a menu-driven tool to check artist IDs, genres, and update the artist cache.
+# Allows searching for artists by name or URL, viewing genres, and entering genres manually if missing.
+# ---
 import re
 from typing import Dict, List, Any
 from Playlist_Tools import sp

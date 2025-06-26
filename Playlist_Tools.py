@@ -1,3 +1,8 @@
+# ---
+# Playlist_Tools.py
+# Provides core playlist management utilities, including batch fetching, genre grouping, and optimized API usage for playlist creation and updates.
+# Used by most scripts for efficient playlist and track management.
+# ---
 import time
 from typing import Dict, List, Set, Any
 from config import REQUESTS_PER_SECOND

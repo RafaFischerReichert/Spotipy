@@ -1,3 +1,8 @@
+# ---
+# Genre_Lister.py
+# Lists all unique genres found in a playlist, using batch processing and normalization for efficiency and accuracy.
+# Prints the total number of unique genres found.
+# ---
 from typing import Dict, List, Set, Any
 from config import REQUESTS_PER_SECOND
 from Playlist_Tools import (

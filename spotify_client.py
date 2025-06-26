@@ -1,3 +1,8 @@
+# ---
+# spotify_client.py
+# Initializes the Spotify API client and provides utility functions for robust API access.
+# Includes retry logic for artist lookups and is used by most scripts for Spotify API operations.
+# ---
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import time

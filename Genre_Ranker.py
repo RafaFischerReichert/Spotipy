@@ -1,3 +1,8 @@
+# ---
+# Genre_Ranker.py
+# Ranks and lists genres found in a playlist by frequency, using batch processing and normalization for accurate statistics.
+# Prints the percentage and count for each genre.
+# ---
 from collections import defaultdict
 from typing import Dict, List, Any, Set
 from config import REQUESTS_PER_SECOND
