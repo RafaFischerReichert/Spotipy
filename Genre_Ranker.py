@@ -50,6 +50,7 @@ def rank_playlist_genres(playlist_id: str) -> None:
                 for artist in artists['artists']:
                     if artist:  # Check if artist exists
                         artist_id = artist['id']
+                        artist_name = artist['name']
                         genres = artist['genres']
                         
                         # Add custom genres if available
@@ -57,7 +58,7 @@ def rank_playlist_genres(playlist_id: str) -> None:
                         genres.extend(custom_genres)
                         
                         # Get country from Wikipedia/Wikidata
-                        country = get_artist_country_wikidata(artist['name'])
+                        country = get_artist_country_wikidata(artist_name)
                         
                         # Add national level genres based on Wikipedia country
                         if country:
@@ -66,8 +67,9 @@ def rank_playlist_genres(playlist_id: str) -> None:
                             elif 'Japan' in country:
                                 genres.append('Japanese Music')
                         
-                        # Update cache
+                        # Update cache with name, genres, and country
                         artist_cache[artist_id] = {
+                            'name': artist_name,
                             'genres': genres,
                             'country': country
                         }

@@ -27,9 +27,10 @@ if __name__ == "__main__":
             for artist in artists['artists']:
                 if artist:
                     artist_id = artist['id']
+                    artist_name = artist['name']
                     genres = artist.get('genres', [])
                     # Fetch Wikipedia genres and combine
-                    wikipedia_genres = get_wikipedia_genres(artist['name']) or []
+                    wikipedia_genres = get_wikipedia_genres(artist_name) or []
                     all_genres = list(dict.fromkeys(genres + wikipedia_genres))
                     # Add custom genres if available
                     custom_genres = get_custom_artist_genres(artist_id)
@@ -43,7 +44,7 @@ if __name__ == "__main__":
                     # Get country from cache or Wikipedia/Wikidata
                     country = artist_cache.get(artist_id, {}).get('country')
                     if not country:
-                        country = get_artist_country_wikidata(artist['name'])
+                        country = get_artist_country_wikidata(artist_name)
                     # Add national level genres based on Wikipedia country
                     if country:
                         if 'Brazil' in country:
@@ -53,6 +54,7 @@ if __name__ == "__main__":
                     # Deduplicate hyphen genres before saving
                     all_genres = deduplicate_hyphen_genres(all_genres)
                     artist_cache[artist_id] = {
+                        'name': artist_name,
                         'genres': all_genres,
                         'country': country
                     }
@@ -64,9 +66,10 @@ if __name__ == "__main__":
             for artist_id in batch_ids:
                 try:
                     artist_data = get_artist_with_retry(artist_id)
+                    artist_name = artist_data['name']
                     genres = artist_data.get('genres', [])
                     # Fetch Wikipedia genres and combine
-                    wikipedia_genres = get_wikipedia_genres(artist_data['name']) or []
+                    wikipedia_genres = get_wikipedia_genres(artist_name) or []
                     all_genres = list(dict.fromkeys(genres + wikipedia_genres))
                     custom_genres = get_custom_artist_genres(artist_id)
                     all_genres.extend([g for g in custom_genres if g not in all_genres])
@@ -78,7 +81,7 @@ if __name__ == "__main__":
                     # Get country from cache or Wikipedia/Wikidata
                     country = artist_cache.get(artist_id, {}).get('country')
                     if not country:
-                        country = get_artist_country_wikidata(artist_data['name'])
+                        country = get_artist_country_wikidata(artist_name)
                     if country:
                         if 'Brazil' in country:
                             all_genres.append('brazilian music')
@@ -87,6 +90,7 @@ if __name__ == "__main__":
                     # Deduplicate hyphen genres before saving
                     all_genres = deduplicate_hyphen_genres(all_genres)
                     artist_cache[artist_id] = {
+                        'name': artist_name,
                         'genres': all_genres,
                         'country': country
                     }

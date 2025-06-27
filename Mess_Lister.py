@@ -5,7 +5,7 @@
 # ---
 import json
 from typing import List, Dict
-from Genre_Tools import load_artist_cache
+from Genre_Tools import load_artist_cache, get_artist_name_from_cache
 
 def list_artists_with_multiple_genres(min_genres: int = 2) -> List[str]:
     """
@@ -52,9 +52,13 @@ def export_artists_with_multiple_genres(min_genres: int = 2, output_file: str = 
     }
     
     for artist_id in artists_with_multiple_genres:
-        genres = artist_cache[artist_id]['genres']
+        data = artist_cache[artist_id]
+        genres = data['genres']
+        artist_name = data.get('name', f"Unknown Artist ({artist_id})")
+        
         artist_data = {
             "artist_id": artist_id,
+            "artist_name": artist_name,
             "genres": genres,
             "genre_count": len(genres)
         }
@@ -83,9 +87,11 @@ def print_artists_with_multiple_genres(min_genres: int = 2):
     print(f"Found {len(artists_with_multiple_genres)} artists\n")
     
     for i, artist_id in enumerate(artists_with_multiple_genres, 1):
-        genres = artist_cache[artist_id]['genres']
+        data = artist_cache[artist_id]
+        genres = data['genres']
+        artist_name = data.get('name', f"Unknown Artist ({artist_id})")
         
-        print(f"{i}. {artist_id}")
+        print(f"{i}. {artist_name} ({artist_id})")
         print(f"   Genres: {', '.join(genres)}")
         print()
 

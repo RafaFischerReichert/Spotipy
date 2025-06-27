@@ -142,9 +142,10 @@ def cache_artist_genres(playlist_id: str) -> None:
                 for artist in artists['artists']:
                     if artist:  # Check if artist exists
                         artist_id = artist['id']
+                        artist_name = artist['name']
                         genres = artist['genres']
                         # Fetch Wikipedia genres and combine
-                        wikipedia_genres = get_wikipedia_genres(artist['name']) or []
+                        wikipedia_genres = get_wikipedia_genres(artist_name) or []
                         # Combine and deduplicate
                         all_genres = list(dict.fromkeys(genres + wikipedia_genres))
                         # Apply normalize_genre to each genre and flatten
@@ -154,7 +155,7 @@ def cache_artist_genres(playlist_id: str) -> None:
                         # Remove duplicates while preserving order
                         all_genres = list(dict.fromkeys(normalized))
                         # Get country from Wikidata
-                        country = get_artist_country_wikidata(artist['name'])
+                        country = get_artist_country_wikidata(artist_name)
                         # Add national level genres based on country
                         if country:
                             if 'Brazil' in country:
@@ -163,8 +164,9 @@ def cache_artist_genres(playlist_id: str) -> None:
                                 all_genres.append('Japanese Music')
                         # Deduplicate hyphen genres before saving
                         all_genres = deduplicate_hyphen_genres(all_genres)
-                        # Update cache
+                        # Update cache with name, genres, and country
                         artist_cache[artist_id] = {
+                            'name': artist_name,
                             'genres': all_genres,
                             'country': country
                         }
@@ -201,9 +203,22 @@ def cache_artist_genres(playlist_id: str) -> None:
                             normalized.extend(normalize_genre(g))
                         # Remove duplicates while preserving order
                         all_genres = list(dict.fromkeys(normalized))
+                        # Get country from Wikidata
+                        country = get_artist_country_wikidata(artist_name)
+                        # Add national level genres based on country
+                        if country:
+                            if 'Brazil' in country:
+                                all_genres.append('brazilian music')
+                            elif 'Japan' in country:
+                                all_genres.append('Japanese Music')
                         # Deduplicate hyphen genres before saving
                         all_genres = deduplicate_hyphen_genres(all_genres)
-                        artist_cache[artist_id]['genres'] = all_genres
+                        # Update cache with name, genres, and country
+                        artist_cache[artist_id] = {
+                            'name': artist_name,
+                            'genres': all_genres,
+                            'country': country
+                        }
                         cache_misses += 1
                         rate_limiter.wait()
                     except Exception as e2:

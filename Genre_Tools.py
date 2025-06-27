@@ -16,7 +16,7 @@ from WikipediaAPI import get_artist_country_wikidata
 ARTIST_CACHE_FILE = "artist_genre_cache.json"
 
 def load_artist_cache() -> Dict[str, Dict[str, Any]]:
-    """Load the artist cache from file if it exists. Cache stores genres and country from Wikipedia."""
+    """Load the artist cache from file if it exists. Cache stores genres, country, and artist name."""
     if os.path.exists(ARTIST_CACHE_FILE):
         try:
             with open(ARTIST_CACHE_FILE, 'r') as f:
@@ -27,12 +27,19 @@ def load_artist_cache() -> Dict[str, Dict[str, Any]]:
                     if isinstance(data, list):
                         # Old format - convert to new format
                         migrated_cache[artist_id] = {
+                            'name': None,  # Will be populated when accessed
                             'genres': data,
                             'country': None
                         }
-                    else:
-                        # Keep existing data
+                    elif isinstance(data, dict):
+                        # Check if this is the new format with name
+                        if 'name' not in data:
+                            # Old dict format without name - add None for name
+                            data['name'] = None
                         migrated_cache[artist_id] = data
+                    else:
+                        # Unknown format - skip
+                        continue
                 return migrated_cache
         except json.JSONDecodeError:
             print("Artist cache file corrupted, starting with empty cache")
@@ -43,6 +50,39 @@ def save_artist_cache(cache: Dict[str, Dict[str, Any]]) -> None:
     """Save the artist cache to file."""
     with open(ARTIST_CACHE_FILE, 'w') as f:
         json.dump(cache, f)
+
+def get_artist_name_from_cache(artist_id: str, artist_cache: Optional[Dict[str, Dict[str, Any]]] = None) -> str:
+    """Get artist name from cache, falling back to Spotify API if not cached."""
+    if artist_cache is None:
+        artist_cache = load_artist_cache()
+    
+    if artist_id in artist_cache:
+        cached_name = artist_cache[artist_id].get('name')
+        if cached_name:
+            return cached_name
+    
+    # Fallback to Spotify API if not in cache or name is None
+    try:
+        artist_data = get_artist_with_retry(artist_id)
+        artist_name = artist_data['name']
+        
+        # Update cache with the name if it wasn't there
+        if artist_id in artist_cache:
+            artist_cache[artist_id]['name'] = artist_name
+            save_artist_cache(artist_cache)
+        else:
+            # Create new cache entry
+            artist_cache[artist_id] = {
+                'name': artist_name,
+                'genres': artist_data.get('genres', []),
+                'country': None
+            }
+            save_artist_cache(artist_cache)
+        
+        return artist_name
+    except Exception as e:
+        print(f"Error getting artist name for {artist_id}: {e}")
+        return f"Unknown Artist ({artist_id})"
 
 def get_artists_batch(artist_ids: List[str], batch_size: int = 50) -> List[Dict[str, Any]]:
     """Get multiple artists in a single API call to reduce requests."""
@@ -80,6 +120,7 @@ def get_artist_genres(artist_id: str, artist_cache: Optional[Dict[str, Dict[str,
     
     # Get artist data with retry logic
     artist_data: Dict[str, Any] = get_artist_with_retry(artist_id)
+    artist_name = artist_data['name']
     genres: List[str] = artist_data['genres']
     
     # Add custom genres if available
@@ -87,7 +128,7 @@ def get_artist_genres(artist_id: str, artist_cache: Optional[Dict[str, Dict[str,
     genres.extend(custom_genres)
     
     # Get country from Wikipedia/Wikidata
-    country = get_artist_country_wikidata(artist_data['name'])
+    country = get_artist_country_wikidata(artist_name)
     
     # Add national level genres based on Wikipedia country
     if country:
@@ -100,8 +141,9 @@ def get_artist_genres(artist_id: str, artist_cache: Optional[Dict[str, Dict[str,
     # Deduplicate hyphen genres before saving
     genres = deduplicate_hyphen_genres(genres)
     
-    # Update cache with genres and Wikipedia country
+    # Update cache with name, genres and Wikipedia country
     artist_cache[artist_id] = {
+        'name': artist_name,
         'genres': genres,
         'country': country
     }
@@ -131,6 +173,7 @@ def get_artist_genres_batch(artist_ids: List[str], artist_cache: Optional[Dict[s
         for artist in artists_data:
             if artist:  # Check if artist exists
                 artist_id = artist['id']
+                artist_name = artist['name']
                 genres = artist['genres']
                 
                 # Add custom genres if available
@@ -138,7 +181,7 @@ def get_artist_genres_batch(artist_ids: List[str], artist_cache: Optional[Dict[s
                 genres.extend(custom_genres)
                 
                 # Get country from Wikipedia/Wikidata
-                country = get_artist_country_wikidata(artist['name'])
+                country = get_artist_country_wikidata(artist_name)
                 
                 # Add national level genres based on Wikipedia country
                 genres_lower = [g.lower() for g in genres]
@@ -151,8 +194,9 @@ def get_artist_genres_batch(artist_ids: List[str], artist_cache: Optional[Dict[s
                 # Deduplicate hyphen genres before saving
                 genres = deduplicate_hyphen_genres(genres)
                 
-                # Update cache with genres and Wikipedia country
+                # Update cache with name, genres and Wikipedia country
                 artist_cache[artist_id] = {
+                    'name': artist_name,
                     'genres': genres,
                     'country': country
                 }

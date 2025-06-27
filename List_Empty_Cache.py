@@ -7,7 +7,7 @@ from typing import Dict, Any
 import json
 from Playlist_Tools import sp
 from spotify_client import get_artist_with_retry
-from Genre_Tools import load_artist_cache
+from Genre_Tools import load_artist_cache, get_artist_name_from_cache
 
 # Cache file path
 ARTIST_CACHE_FILE = "artist_genre_cache.json"
@@ -36,38 +36,52 @@ def list_artists_without_genres():
     for i in range(0, len(artists_without_genres), batch_size):
         batch_artist_ids = artists_without_genres[i:i + batch_size]
         
-        try:
-            # Get artist data in batch
-            artists = sp.artists(batch_artist_ids)
-            
-            for artist in artists['artists']:
-                if artist:  # Check if artist exists
-                    artist_id = artist['id']
-                    artist_name = artist['name']
-                    
-                    # Format for JSON storage
-                    artists_data[artist_id] = {
-                        "name": artist_name,
-                        "genres": []  # Empty genres list
-                    }
-                    
-        except Exception as e:
-            print(f"Error getting batch of artists: {str(e)}")
-            # Fallback to individual requests
-            for artist_id in batch_artist_ids:
-                try:
-                    artist = get_artist_with_retry(artist_id)
-                    artist_name = artist['name']
-                    
-                    # Format for JSON storage
-                    artists_data[artist_id] = {
-                        "name": artist_name,
-                        "genres": []  # Empty genres list
-                    }
-                    
-                except Exception as e2:
-                    print(f"Error getting artist info for {artist_id}: {str(e2)}")
-                    continue
+        # First, try to get names from cache
+        uncached_artist_ids = []
+        for artist_id in batch_artist_ids:
+            cached_name = artist_cache.get(artist_id, {}).get('name')
+            if cached_name:
+                artists_data[artist_id] = {
+                    "name": cached_name,
+                    "genres": []  # Empty genres list
+                }
+            else:
+                uncached_artist_ids.append(artist_id)
+        
+        # For artists not in cache, fetch from Spotify API
+        if uncached_artist_ids:
+            try:
+                # Get artist data in batch
+                artists = sp.artists(uncached_artist_ids)
+                
+                for artist in artists['artists']:
+                    if artist:  # Check if artist exists
+                        artist_id = artist['id']
+                        artist_name = artist['name']
+                        
+                        # Format for JSON storage
+                        artists_data[artist_id] = {
+                            "name": artist_name,
+                            "genres": []  # Empty genres list
+                        }
+                        
+            except Exception as e:
+                print(f"Error getting batch of artists: {str(e)}")
+                # Fallback to individual requests
+                for artist_id in uncached_artist_ids:
+                    try:
+                        artist = get_artist_with_retry(artist_id)
+                        artist_name = artist['name']
+                        
+                        # Format for JSON storage
+                        artists_data[artist_id] = {
+                            "name": artist_name,
+                            "genres": []  # Empty genres list
+                        }
+                        
+                    except Exception as e2:
+                        print(f"Error getting artist info for {artist_id}: {str(e2)}")
+                        continue
     
     # Save results to JSON file
     save_artists_to_json(artists_data)

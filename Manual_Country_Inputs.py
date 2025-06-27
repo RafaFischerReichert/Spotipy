@@ -3,15 +3,7 @@
 # Prompts the user to manually input missing country information for artists in the cache.
 # Updates the cache with user-provided country data for each artist.
 # ---
-from Genre_Tools import load_artist_cache, save_artist_cache
-from spotify_client import sp
-
-def get_artist_name(artist_id):
-    try:
-        artist = sp.artist(artist_id)
-        return artist.get('name', artist_id)
-    except Exception:
-        return artist_id
+from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_name_from_cache
 
 def prompt_and_update_countries():
     cache = load_artist_cache()
@@ -23,7 +15,7 @@ def prompt_and_update_countries():
 
     print(f"Found {len(null_country_artists)} artists with no country in the cache.\n")
     for artist_id in null_country_artists:
-        artist_name = get_artist_name(artist_id)
+        artist_name = get_artist_name_from_cache(artist_id, cache)
         genres = cache[artist_id].get('genres', [])
         print(f"Artist: {artist_name} (ID: {artist_id}, genres: {', '.join(genres)})")
         country = input("Enter country for this artist (or leave blank to skip): ").strip()

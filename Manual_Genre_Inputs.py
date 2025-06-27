@@ -6,8 +6,7 @@
 import json
 import os
 from typing import Dict, List, Set, Optional, Any
-from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_genres, normalize_genre, deduplicate_hyphen_genres
-from spotify_client import sp
+from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_genres, normalize_genre, deduplicate_hyphen_genres, get_artist_name_from_cache
 
 def get_artists_without_genres(artist_cache: Dict[str, Dict[str, Any]]) -> List[str]:
     """Get list of artist IDs that have no genres in cache."""
@@ -17,15 +16,6 @@ def get_artists_without_genres(artist_cache: Dict[str, Dict[str, Any]]) -> List[
         if not genres:
             artists_without_genres.append(artist_id)
     return artists_without_genres
-
-def get_artist_name(artist_id: str) -> str:
-    """Get artist name from Spotify API."""
-    try:
-        artist = sp.artist(artist_id)
-        return artist['name']
-    except Exception as e:
-        print(f"Error getting artist name for {artist_id}: {e}")
-        return f"Unknown Artist ({artist_id})"
 
 def manual_genre_input():
     """Allow manual input of genres for artists that don't have them."""
@@ -52,7 +42,7 @@ def manual_genre_input():
     skipped = 0
     
     for i, artist_id in enumerate(artists_without_genres, 1):
-        artist_name = get_artist_name(artist_id)
+        artist_name = get_artist_name_from_cache(artist_id, artist_cache)
         
         print(f"\n[{i}/{len(artists_without_genres)}] Artist: {artist_name}")
         print(f"Spotify ID: {artist_id}")

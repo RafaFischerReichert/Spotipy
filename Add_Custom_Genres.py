@@ -17,6 +17,7 @@ This script allows you to:
 
 from typing import Dict, List, Any
 from Artist_Genres import load_custom_genres, save_custom_genres
+from Genre_Tools import get_artist_name_from_cache, load_artist_cache
 from spotify_client import sp
 
 def normalize_genre_for_storage(genre: str) -> str:
@@ -39,7 +40,19 @@ def search_artist_by_name(artist_name: str) -> List[Dict[str, Any]]:
         return []
 
 def get_artist_by_id(artist_id: str) -> Dict[str, Any]:
-    """Get artist details by ID"""
+    """Get artist details by ID, using cache when possible"""
+    # First try to get from cache
+    artist_cache = load_artist_cache()
+    cached_name = artist_cache.get(artist_id, {}).get('name')
+    
+    if cached_name:
+        return {
+            'id': artist_id,
+            'name': cached_name,
+            'genres': artist_cache.get(artist_id, {}).get('genres', [])
+        }
+    
+    # Fallback to Spotify API
     try:
         return sp.artist(artist_id)
     except Exception as e:
@@ -151,7 +164,7 @@ def add_by_artist_id() -> None:
         print("❌ No artist ID provided")
         return
     
-    # Get artist details
+    # Get artist details (using cache when possible)
     artist = get_artist_by_id(artist_id)
     if not artist:
         print("❌ Artist not found")

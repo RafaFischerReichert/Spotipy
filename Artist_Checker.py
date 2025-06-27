@@ -7,7 +7,7 @@ import re
 from typing import Dict, List, Any
 from Playlist_Tools import sp
 from spotify_client import get_artist_with_retry
-from Genre_Tools import load_artist_cache, save_artist_cache
+from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_name_from_cache
 
 # Cache file path
 ARTIST_CACHE_FILE = "artist_genre_cache.json"
@@ -27,24 +27,47 @@ def extract_artist_id_from_url(url: str) -> str:
     else:
         raise ValueError("Could not extract artist ID from the provided URL")
 
-def update_tracks_for_artist(artist_id: str, artist_genres: List[str], cache: Dict[str, List[str]]) -> None:
+def update_tracks_for_artist(artist_id: str, artist_genres: List[str], cache: Dict[str, Dict[str, Any]]) -> None:
     """Update the cache for an artist with their genres."""
-    # Update artist cache
-    cache[artist_id] = artist_genres
+    # Get artist name from cache or API
+    artist_name = get_artist_name_from_cache(artist_id, cache)
+    
+    # Update artist cache with name and genres
+    cache[artist_id] = {
+        'name': artist_name,
+        'genres': artist_genres,
+        'country': cache.get(artist_id, {}).get('country')
+    }
     save_artist_cache(cache)
-    print(f"\nUpdated cache for artist {artist_id}")
+    print(f"\nUpdated cache for artist {artist_name} ({artist_id})")
 
 def print_artist_genres(artist_id: str):
     """Print all genres for a given artist and update artist cache"""
     try:
-        artist = get_artist_with_retry(artist_id)
-        print(f"\nGenres for {artist['name']}:")
-        
         # Load current cache
         cache = load_artist_cache()
         
-        if artist['genres']:
-            for genre in artist['genres']:
+        # Try to get artist name from cache first
+        artist_name = get_artist_name_from_cache(artist_id, cache)
+        
+        # Get artist data from API if not in cache
+        if artist_id not in cache or not cache[artist_id].get('genres'):
+            artist = get_artist_with_retry(artist_id)
+            artist_name = artist['name']
+            
+            # Update cache with artist data
+            cache[artist_id] = {
+                'name': artist_name,
+                'genres': artist.get('genres', []),
+                'country': cache.get(artist_id, {}).get('country')
+            }
+            save_artist_cache(cache)
+        
+        print(f"\nGenres for {artist_name}:")
+        
+        genres = cache[artist_id].get('genres', [])
+        if genres:
+            for genre in genres:
                 print(f"- {genre}")
         else:
             print("No genres found for this artist")
