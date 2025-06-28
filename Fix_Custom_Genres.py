@@ -15,19 +15,9 @@ import time
 from typing import Dict, List, Set, Any
 from config import REQUESTS_PER_SECOND, PLAYLIST_ID
 from spotify_client import sp
-from Playlist_Tools import get_existing_playlists, get_playlist_track_ids, RateLimiter, get_playlist_tracks
+from Playlist_Tools import get_existing_playlists, get_playlist_track_ids, RateLimiter, get_playlist_tracks, find_matching_playlists
 from Genre_Tools import normalize_genre, load_artist_cache, save_artist_cache
 from Artist_Genres import load_custom_genres, save_custom_genres
-
-def normalize_genre_for_storage(genre: str) -> str:
-    """Normalize genre for storage: lowercase and remove hyphens"""
-    # Convert to lowercase
-    normalized = genre.lower()
-    # Remove hyphens and replace with spaces
-    normalized = normalized.replace('-', ' ')
-    # Remove extra spaces
-    normalized = ' '.join(normalized.split())
-    return normalized
 
 def fix_custom_genres() -> Dict[str, Dict[str, Any]]:
     """Fix existing custom genres by normalizing them"""
@@ -49,9 +39,14 @@ def fix_custom_genres() -> Dict[str, Dict[str, Any]]:
             raw_genres = artist_data['genres']
             artist_name = artist_data.get('name', f'Artist_{artist_id}')
             
-            # Normalize genres
+            # Normalize genres using the core normalize_genre function
             if raw_genres:
-                normalized_genres = [normalize_genre_for_storage(genre) for genre in raw_genres]
+                normalized_genres = []
+                for genre in raw_genres:
+                    normalized = normalize_genre(genre)
+                    if normalized:  # Only add if normalization returned results
+                        normalized_genres.extend(normalized)
+                
                 # Remove duplicates while preserving order
                 normalized_genres = list(dict.fromkeys(normalized_genres))
                 
@@ -130,23 +125,6 @@ def get_original_playlist_tracks_by_artist() -> Dict[str, List[str]]:
     
     print(f"📊 Found {len(artist_tracks)} artists in original playlist")
     return artist_tracks
-
-def find_matching_playlists(genre: str, existing_playlists: Dict[str, str]) -> List[str]:
-    """Find playlists that match a given genre exactly"""
-    matching_playlists = []
-    normalized_genres = normalize_genre(genre)
-    
-    for playlist_name, playlist_id in existing_playlists.items():
-        playlist_name_lower = playlist_name.lower()
-        
-        # Check for exact matches with normalized genres
-        for norm_genre in normalized_genres:
-            # Exact match: playlist name should exactly match the normalized genre
-            if playlist_name_lower == norm_genre.lower():
-                matching_playlists.append(playlist_id)
-                break
-    
-    return matching_playlists
 
 def create_new_playlist(playlist_name: str, track_ids: List[str], rate_limiter: RateLimiter) -> bool:
     """Create a new playlist and add tracks to it"""

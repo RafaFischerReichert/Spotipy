@@ -16,28 +16,9 @@ This script allows you to:
 """
 
 from typing import Dict, List, Any
-from Artist_Genres import load_custom_genres, save_custom_genres
-from Genre_Tools import get_artist_name_from_cache, load_artist_cache
+from Artist_Genres import load_custom_genres, save_custom_genres, search_artist_by_name
+from Genre_Tools import get_artist_name_from_cache, load_artist_cache, normalize_genre
 from spotify_client import sp
-
-def normalize_genre_for_storage(genre: str) -> str:
-    """Normalize genre for storage: lowercase and remove hyphens"""
-    # Convert to lowercase
-    normalized = genre.lower()
-    # Remove hyphens and replace with spaces
-    normalized = normalized.replace('-', ' ')
-    # Remove extra spaces
-    normalized = ' '.join(normalized.split())
-    return normalized
-
-def search_artist_by_name(artist_name: str) -> List[Dict[str, Any]]:
-    """Search for an artist by name and return results"""
-    try:
-        results = sp.search(q=artist_name, type='artist', limit=10)
-        return results['artists']['items']
-    except Exception as e:
-        print(f"Error searching for artist: {str(e)}")
-        return []
 
 def get_artist_by_id(artist_id: str) -> Dict[str, Any]:
     """Get artist details by ID, using cache when possible"""
@@ -64,8 +45,13 @@ def add_artist_custom_genres(artist_id: str, artist_name: str, genres: List[str]
     # Load existing custom genres
     custom_genres = load_custom_genres()
     
-    # Normalize genres
-    normalized_genres = [normalize_genre_for_storage(genre) for genre in genres]
+    # Normalize genres using the core normalize_genre function
+    normalized_genres = []
+    for genre in genres:
+        normalized = normalize_genre(genre)
+        if normalized:  # Only add if normalization returned results
+            normalized_genres.extend(normalized)
+    
     # Remove duplicates while preserving order
     normalized_genres = list(dict.fromkeys(normalized_genres))
     
@@ -203,24 +189,26 @@ def main():
     
     while True:
         print("\nOptions:")
-        print("1. View current custom genres")
-        print("2. Search and add artist custom genres")
-        print("3. Add custom genres by artist ID")
-        print("4. Remove artist custom genres")
+        print("1. Search and add custom genres")
+        print("2. Add custom genres by artist ID")
+        print("3. View current custom genres")
+        print("4. Remove custom genres for an artist")
         print("5. Exit")
         
         choice = input("\nSelect option (1-5): ").strip()
         
         if choice == '1':
-            view_custom_genres()
-        elif choice == '2':
             search_and_add_artist()
-        elif choice == '3':
+        elif choice == '2':
             add_by_artist_id()
+        elif choice == '3':
+            view_custom_genres()
         elif choice == '4':
             artist_id = input("Enter artist ID to remove: ").strip()
             if artist_id:
                 remove_artist_custom_genres(artist_id)
+            else:
+                print("❌ No artist ID provided")
         elif choice == '5':
             print("👋 Goodbye!")
             break

@@ -6,7 +6,7 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import time
-from typing import Dict, Any
+from typing import Dict, Any, List
 from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 
 # Initialize Spotify client
@@ -28,4 +28,48 @@ def get_artist_with_retry(artist_id: str, max_retries: int = 3, base_delay: int 
                 print(f"Request failed ({str(e)}), waiting {delay} seconds...")
                 time.sleep(delay)
             else:
-                raise 
+                raise
+
+def get_artists_batch(artist_ids: List[str], batch_size: int = 50) -> List[Dict[str, Any]]:
+    """Get multiple artists in a single API call to reduce requests."""
+    all_artists = []
+    
+    for i in range(0, len(artist_ids), batch_size):
+        batch = artist_ids[i:i + batch_size]
+        try:
+            artists = sp.artists(batch)
+            all_artists.extend(artists['artists'])
+        except Exception as e:
+            print(f"Error getting batch of artists: {str(e)}")
+            # Fallback to individual requests for failed batch
+            for artist_id in batch:
+                try:
+                    artist = sp.artist(artist_id)
+                    all_artists.append(artist)
+                except Exception as e2:
+                    print(f"Error getting artist {artist_id}: {str(e2)}")
+                    continue
+    
+    return all_artists
+
+def get_tracks_batch(track_ids: List[str], batch_size: int = 50) -> List[Dict[str, Any]]:
+    """Get multiple tracks in a single API call to reduce requests."""
+    all_tracks = []
+    
+    for i in range(0, len(track_ids), batch_size):
+        batch = track_ids[i:i + batch_size]
+        try:
+            tracks = sp.tracks(batch)
+            all_tracks.extend(tracks['tracks'])
+        except Exception as e:
+            print(f"Error getting batch of tracks: {str(e)}")
+            # Fallback to individual requests for failed batch
+            for track_id in batch:
+                try:
+                    track = sp.track(track_id)
+                    all_tracks.append(track)
+                except Exception as e2:
+                    print(f"Error getting track {track_id}: {str(e2)}")
+                    continue
+    
+    return all_tracks 

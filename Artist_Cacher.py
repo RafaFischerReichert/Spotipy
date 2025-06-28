@@ -5,68 +5,14 @@
 # Updates and saves the artist cache for use by other scripts.
 # ---
 from typing import Dict, List, Set, Any
-from spotify_client import sp
+from spotify_client import sp, get_tracks_batch, get_artists_batch
 from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_genres, normalize_genre, deduplicate_hyphen_genres
-from Playlist_Tools import get_playlist_track_ids, RateLimiter
+from Playlist_Tools import get_playlist_track_ids, RateLimiter, format_time
 import time
 from config import PLAYLIST_ID, REQUESTS_PER_SECOND
 from datetime import timedelta
 from tqdm import tqdm
 from WikipediaAPI import get_artist_country_wikidata, get_artist_genres as get_wikipedia_genres
-
-def format_time(seconds: float) -> str:
-    """Format seconds into a human readable time string."""
-    return str(timedelta(seconds=int(seconds)))
-
-def get_tracks_batch(track_ids: List[str], batch_size: int = 50) -> List[Dict]:
-    """Get multiple tracks in a single API call to reduce requests."""
-    all_tracks = []
-    rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
-    
-    for i in range(0, len(track_ids), batch_size):
-        batch = track_ids[i:i + batch_size]
-        try:
-            tracks = sp.tracks(batch)
-            all_tracks.extend(tracks['tracks'])
-            rate_limiter.wait()
-        except Exception as e:
-            print(f"\nError getting batch of tracks: {str(e)}")
-            # Fallback to individual requests for failed batch
-            for track_id in batch:
-                try:
-                    track = sp.track(track_id)
-                    all_tracks.append(track)
-                    rate_limiter.wait()
-                except Exception as e2:
-                    print(f"Error getting track {track_id}: {str(e2)}")
-                    continue
-    
-    return all_tracks
-
-def get_artists_batch(artist_ids: List[str], batch_size: int = 50) -> List[Dict]:
-    """Get multiple artists in a single API call to reduce requests."""
-    all_artists = []
-    rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
-    
-    for i in range(0, len(artist_ids), batch_size):
-        batch = artist_ids[i:i + batch_size]
-        try:
-            artists = sp.artists(batch)
-            all_artists.extend(artists['artists'])
-            rate_limiter.wait()
-        except Exception as e:
-            print(f"\nError getting batch of artists: {str(e)}")
-            # Fallback to individual requests for failed batch
-            for artist_id in batch:
-                try:
-                    artist = sp.artist(artist_id)
-                    all_artists.append(artist)
-                    rate_limiter.wait()
-                except Exception as e2:
-                    print(f"Error getting artist {artist_id}: {str(e2)}")
-                    continue
-    
-    return all_artists
 
 def cache_artist_genres(playlist_id: str) -> None:
     """
@@ -225,26 +171,18 @@ def cache_artist_genres(playlist_id: str) -> None:
                         print(f"Error getting artist {artist_id}: {str(e2)}")
                         continue
     
-    # Save final cache state
+    # Save final cache
     save_artist_cache(artist_cache)
-    total_time = time.time() - start_time
     
-    print(f"\nFinal cache stats:")
-    print(f"Total artists processed: {total_artists}")
-    print(f"Cache hits: {cached_count}")
-    print(f"Cache misses: {cache_misses}")
-    print(f"Total time: {format_time(total_time)}")
-    
-    # Calculate request reduction
-    original_requests = total_tracks + total_artists
-    optimized_requests = (total_tracks // 50 + 1) + (len(uncached_artist_ids) // 50 + 1)
-    reduction = ((original_requests - optimized_requests) / original_requests) * 100
-    
-    print(f"\nRequest optimization:")
-    print(f"Original requests: {original_requests}")
-    print(f"Optimized requests: {optimized_requests}")
-    print(f"Request reduction: {reduction:.1f}%")
+    # Print final statistics
+    elapsed_time = time.time() - start_time
+    print(f"\n✅ Caching completed!")
+    print(f"📊 Statistics:")
+    print(f"   - Total artists processed: {total_artists}")
+    print(f"   - Artists already cached: {cached_count}")
+    print(f"   - New artists cached: {cache_misses}")
+    print(f"   - Total time: {format_time(elapsed_time)}")
+    print(f"   - Average time per artist: {elapsed_time/total_artists:.2f} seconds")
 
 if __name__ == "__main__":
-    print(f"\nCaching artists from config playlist")
     cache_artist_genres(PLAYLIST_ID)

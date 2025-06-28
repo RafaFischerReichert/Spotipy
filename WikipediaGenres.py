@@ -7,16 +7,7 @@ import json
 import re
 import time
 from WikipediaAPI import get_artist_genres
-
-def normalize_genre_for_storage(genre: str) -> str:
-    """Normalize genre for storage: lowercase and remove hyphens"""
-    # Convert to lowercase
-    normalized = genre.lower()
-    # Remove hyphens and replace with spaces
-    normalized = normalized.replace('-', ' ')
-    # Remove extra spaces
-    normalized = ' '.join(normalized.split())
-    return normalized
+from Genre_Tools import normalize_genre
 
 def extract_artist_names_from_json(filename):
     """Extract artist names from the artists_without_genres.json file"""
@@ -70,9 +61,14 @@ def get_genres_for_artists(artists, delay=1):
         try:
             genres = get_artist_genres(artist_name)
             
-            # Normalize genres for storage
+            # Normalize genres using the core normalize_genre function
             if genres:
-                normalized_genres = [normalize_genre_for_storage(genre) for genre in genres]
+                normalized_genres = []
+                for genre in genres:
+                    normalized = normalize_genre(genre)
+                    if normalized:  # Only add if normalization returned results
+                        normalized_genres.extend(normalized)
+                
                 # Remove duplicates while preserving order
                 normalized_genres = list(dict.fromkeys(normalized_genres))
                 print(f"   Raw genres: {genres}")

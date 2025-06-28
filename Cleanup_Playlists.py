@@ -8,61 +8,8 @@
 from typing import Dict, List
 from config import REQUESTS_PER_SECOND
 from spotify_client import sp
-from Playlist_Tools import get_existing_playlists, get_playlist_track_ids, RateLimiter
-from Genre_Tools import normalize_genre, load_artist_cache
-
-def find_matching_playlists(genre: str, existing_playlists: Dict[str, str]) -> List[str]:
-    """Find playlists that match a given genre exactly"""
-    matching_playlists = []
-    normalized_genres = normalize_genre(genre)
-    
-    for playlist_name, playlist_id in existing_playlists.items():
-        playlist_name_lower = playlist_name.lower()
-        
-        # Check for exact matches with normalized genres
-        for norm_genre in normalized_genres:
-            # Exact match: playlist name should exactly match the normalized genre
-            if playlist_name_lower == norm_genre.lower():
-                matching_playlists.append(playlist_id)
-                break
-    
-    return matching_playlists
-
-def get_playlist_genre(playlist_name: str) -> str:
-    """Extract the genre from playlist name"""
-    # Remove common prefixes/suffixes and get the main genre
-    name_lower = playlist_name.lower()
-    
-    # Common genre playlist patterns
-    genre_patterns = [
-        'metal', 'rock', 'pop', 'hip hop', 'rap', 'jazz', 'classical', 'electronic',
-        'folk', 'country', 'r&b', 'blues', 'reggae', 'punk', 'indie', 'alternative',
-        'brazilian', 'japanese', 'anime', 'emo', 'industrial', 'glam', 'sertanejo',
-        'mpb', 'hardcore', 'celtic', 'medieval', 'comedy', 'electro', 'edm'
-    ]
-    
-    for pattern in genre_patterns:
-        if pattern in name_lower:
-            return pattern
-    
-    # If no pattern matches, return the playlist name as is
-    return name_lower
-
-def should_track_be_in_playlist(track_genres: List[str], playlist_genre: str) -> bool:
-    """Check if a track should be in a specific genre playlist"""
-    # Normalize the playlist genre
-    playlist_genre_lower = playlist_genre.lower()
-    
-    # Check each track genre
-    for track_genre in track_genres:
-        normalized_track_genres = normalize_genre(track_genre)
-        
-        # Check for exact match
-        for norm_genre in normalized_track_genres:
-            if norm_genre.lower() == playlist_genre_lower:
-                return True
-    
-    return False
+from Playlist_Tools import get_existing_playlists, get_playlist_track_ids, RateLimiter, find_matching_playlists, get_playlist_genre, identify_genre_playlists
+from Genre_Tools import normalize_genre, load_artist_cache, should_track_be_in_playlist
 
 def cleanup_playlist(playlist_id: str, playlist_name: str, rate_limiter: RateLimiter) -> Dict[str, int]:
     """Clean up a single playlist by removing incorrect tracks"""
@@ -140,28 +87,6 @@ def cleanup_playlist(playlist_id: str, playlist_name: str, rate_limiter: RateLim
         'removed': removed_count,
         'total': len(all_track_ids)
     }
-
-def identify_genre_playlists(existing_playlists: Dict[str, str]) -> Dict[str, str]:
-    """Identify playlists that are likely genre playlists"""
-    genre_playlists = {}
-    
-    genre_keywords = [
-        'metal', 'rock', 'pop', 'hip hop', 'rap', 'jazz', 'classical', 'electronic',
-        'folk', 'country', 'r&b', 'blues', 'reggae', 'punk', 'indie', 'alternative',
-        'brazilian', 'japanese', 'anime', 'emo', 'industrial', 'glam', 'sertanejo',
-        'mpb', 'hardcore', 'celtic', 'medieval', 'comedy', 'electro', 'edm'
-    ]
-    
-    for playlist_name, playlist_id in existing_playlists.items():
-        name_lower = playlist_name.lower()
-        
-        # Check if playlist name contains genre keywords
-        for keyword in genre_keywords:
-            if keyword in name_lower:
-                genre_playlists[playlist_name] = playlist_id
-                break
-    
-    return genre_playlists
 
 def cleanup_all_genre_playlists() -> None:
     """Clean up all genre playlists"""

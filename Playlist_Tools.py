@@ -6,7 +6,7 @@
 import time
 from typing import Dict, List, Set, Any
 from config import REQUESTS_PER_SECOND
-from spotify_client import sp
+from spotify_client import sp, get_artists_batch, get_tracks_batch
 from Genre_Tools import get_track_genres, load_artist_cache, save_artist_cache, normalize_genre, get_artist_genres
 from collections import defaultdict
 from WikipediaAPI import get_artist_country_wikidata
@@ -225,32 +225,84 @@ def create_genre_playlists(playlist_id: str) -> None:
     return genre_tracks
 
 def process_tracks_batch_optimized(tracks: List[Dict[str, Any]], artist_cache: Dict[str, Dict[str, Any]], batch_size: int = 100) -> Dict[str, Set[str]]:
-    """Process tracks in optimized batches with efficient genre extraction"""
+    """Process tracks in optimized batches to group by genre"""
     genre_tracks: Dict[str, Set[str]] = defaultdict(set)
-    track_genres_map: Dict[str, List[str]] = {}
-
-    print(f"Processing {len(tracks)} tracks in optimized batches of {batch_size}...")
-
-    # Step 1: Collect raw genres for all tracks
-    for track in tracks:
-        if track['track']:
-            track_id = track['track']['id']
-            raw_genres = get_track_genres(track, artist_cache)
-            track_genres_map[track_id] = raw_genres
-
-    # Step 2: Create a normalization map for all unique raw genres
-    all_raw_genres = set(g for genres in track_genres_map.values() for g in genres)
-    normalization_map = {genre: normalize_genre(genre) for genre in all_raw_genres}
-
-    # Step 3: Populate genre_tracks using the normalization map
-    for track in tracks:
-        if track['track']:
-            track_id = track['track']['id']
-            raw_genres = track_genres_map.get(track_id, [])
-            
-            for raw_genre in raw_genres:
-                normalized_genres = normalization_map.get(raw_genre, [])
-                for normalized_genre in normalized_genres:
-                    genre_tracks[normalized_genre].add(track_id)
+    
+    # Process tracks in batches
+    for i in range(0, len(tracks), batch_size):
+        batch = tracks[i:i + batch_size]
+        
+        for track in batch:
+            if track['track']:
+                track_id = track['track']['id']
+                track_genres = get_track_genres(track, artist_cache)
+                
+                # Add track to each of its genres
+                for genre in track_genres:
+                    genre_tracks[genre].add(track_id)
     
     return genre_tracks
+
+def format_time(seconds: float) -> str:
+    """Format seconds into a human readable time string."""
+    from datetime import timedelta
+    return str(timedelta(seconds=int(seconds)))
+
+def find_matching_playlists(genre: str, existing_playlists: Dict[str, str]) -> List[str]:
+    """Find playlists that match a given genre exactly"""
+    matching_playlists = []
+    normalized_genres = normalize_genre(genre)
+    
+    for playlist_name, playlist_id in existing_playlists.items():
+        playlist_name_lower = playlist_name.lower()
+        
+        # Check for exact matches with normalized genres
+        for norm_genre in normalized_genres:
+            # Exact match: playlist name should exactly match the normalized genre
+            if playlist_name_lower == norm_genre.lower():
+                matching_playlists.append(playlist_id)
+                break
+    
+    return matching_playlists
+
+def get_playlist_genre(playlist_name: str) -> str:
+    """Extract the genre from playlist name"""
+    # Remove common prefixes/suffixes and get the main genre
+    name_lower = playlist_name.lower()
+    
+    # Common genre playlist patterns
+    genre_patterns = [
+        'metal', 'rock', 'pop', 'hip hop', 'rap', 'jazz', 'classical', 'electronic',
+        'folk', 'country', 'r&b', 'blues', 'reggae', 'punk', 'indie', 'alternative',
+        'brazilian', 'japanese', 'anime', 'emo', 'industrial', 'glam', 'sertanejo',
+        'mpb', 'hardcore', 'celtic', 'medieval', 'comedy', 'electro', 'edm'
+    ]
+    
+    for pattern in genre_patterns:
+        if pattern in name_lower:
+            return pattern
+    
+    # If no pattern matches, return the playlist name as is
+    return name_lower
+
+def identify_genre_playlists(existing_playlists: Dict[str, str]) -> Dict[str, str]:
+    """Identify playlists that are likely genre playlists"""
+    genre_playlists = {}
+    
+    genre_keywords = [
+        'metal', 'rock', 'pop', 'hip hop', 'rap', 'jazz', 'classical', 'electronic',
+        'folk', 'country', 'r&b', 'blues', 'reggae', 'punk', 'indie', 'alternative',
+        'brazilian', 'japanese', 'anime', 'emo', 'industrial', 'glam', 'sertanejo',
+        'mpb', 'hardcore', 'celtic', 'medieval', 'comedy', 'electro', 'edm'
+    ]
+    
+    for playlist_name, playlist_id in existing_playlists.items():
+        name_lower = playlist_name.lower()
+        
+        # Check if playlist name contains genre keywords
+        for keyword in genre_keywords:
+            if keyword in name_lower:
+                genre_playlists[playlist_name] = playlist_id
+                break
+    
+    return genre_playlists

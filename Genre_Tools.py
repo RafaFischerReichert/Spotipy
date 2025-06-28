@@ -8,7 +8,7 @@ import json
 import os
 import re
 from typing import Dict, List, Set, Optional, Any
-from spotify_client import sp, get_artist_with_retry
+from spotify_client import sp, get_artist_with_retry, get_artists_batch
 from Artist_Genres import get_custom_artist_genres
 from WikipediaAPI import get_artist_country_wikidata
 
@@ -83,28 +83,6 @@ def get_artist_name_from_cache(artist_id: str, artist_cache: Optional[Dict[str, 
     except Exception as e:
         print(f"Error getting artist name for {artist_id}: {e}")
         return f"Unknown Artist ({artist_id})"
-
-def get_artists_batch(artist_ids: List[str], batch_size: int = 50) -> List[Dict[str, Any]]:
-    """Get multiple artists in a single API call to reduce requests."""
-    all_artists = []
-    
-    for i in range(0, len(artist_ids), batch_size):
-        batch = artist_ids[i:i + batch_size]
-        try:
-            artists = sp.artists(batch)
-            all_artists.extend(artists['artists'])
-        except Exception as e:
-            print(f"Error getting batch of artists: {str(e)}")
-            # Fallback to individual requests for failed batch
-            for artist_id in batch:
-                try:
-                    artist = sp.artist(artist_id)
-                    all_artists.append(artist)
-                except Exception as e2:
-                    print(f"Error getting artist {artist_id}: {str(e2)}")
-                    continue
-    
-    return all_artists
 
 def get_artist_genres(artist_id: str, artist_cache: Optional[Dict[str, Dict[str, Any]]] = None) -> List[str]:
     """Get genres for an artist, using cache if provided."""
@@ -350,16 +328,34 @@ def normalize_genre(genre: str) -> List[str]:
     return list(result)
 
 def deduplicate_hyphen_genres(genres: List[str]) -> List[str]:
-    """
-    Remove hyphenated genres if the same genre exists in the list without the hyphen.
-    E.g., if both 'pop-rock' and 'pop rock' are present, remove 'pop-rock'.
-    Keeps the first occurrence (hyphenated or not) if only one exists.
-    """
-    genre_set = set(genres)
-    to_remove = set()
+    """Remove duplicate genres that differ only by hyphens"""
+    # Create a mapping of normalized genre names to original genres
+    normalized_map = {}
+    
     for genre in genres:
-        if '-' in genre:
-            no_hyphen = genre.replace('-', ' ')
-            if no_hyphen in genre_set:
-                to_remove.add(genre)
-    return [g for g in genres if g not in to_remove] 
+        # Normalize by removing hyphens and converting to lowercase
+        normalized = genre.lower().replace('-', ' ')
+        normalized = ' '.join(normalized.split())  # Remove extra spaces
+        
+        # Keep the first occurrence of each normalized genre
+        if normalized not in normalized_map:
+            normalized_map[normalized] = genre
+    
+    # Return the deduplicated list
+    return list(normalized_map.values())
+
+def should_track_be_in_playlist(track_genres: List[str], playlist_genre: str) -> bool:
+    """Check if a track should be in a specific genre playlist"""
+    # Normalize the playlist genre
+    playlist_genre_lower = playlist_genre.lower()
+    
+    # Check each track genre
+    for track_genre in track_genres:
+        normalized_track_genres = normalize_genre(track_genre)
+        
+        # Check for exact match
+        for norm_genre in normalized_track_genres:
+            if norm_genre.lower() == playlist_genre_lower:
+                return True
+    
+    return False 

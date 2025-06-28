@@ -8,24 +8,10 @@ from typing import Dict, List, Any
 from Playlist_Tools import sp
 from spotify_client import get_artist_with_retry
 from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_name_from_cache
+from Artist_Genres import search_artist_by_name, extract_artist_id_from_url
 
 # Cache file path
 ARTIST_CACHE_FILE = "artist_genre_cache.json"
-
-def extract_artist_id_from_url(url: str) -> str:
-    """Extract artist ID from Spotify artist URL."""
-    # Remove everything after ?si= if present
-    if '?si=' in url:
-        url = url.split('?si=')[0]
-    
-    # Pattern to match artist ID in Spotify URLs
-    pattern = r'/artist/([a-zA-Z0-9]+)'
-    match = re.search(pattern, url)
-    
-    if match:
-        return match.group(1)
-    else:
-        raise ValueError("Could not extract artist ID from the provided URL")
 
 def update_tracks_for_artist(artist_id: str, artist_genres: List[str], cache: Dict[str, Dict[str, Any]]) -> None:
     """Update the cache for an artist with their genres."""
@@ -81,15 +67,6 @@ def print_artist_genres(artist_id: str):
                     print(f"Added manual genres: {', '.join(manual_genres)}")
     except Exception as e:
         print(f"Error getting artist data: {str(e)}")
-
-def search_artist_by_name(artist_name: str) -> List[Dict[str, Any]]:
-    """Search for an artist by name and return results"""
-    try:
-        results = sp.search(q=artist_name, type='artist', limit=10)
-        return results['artists']['items']
-    except Exception as e:
-        print(f"Error searching for artist: {str(e)}")
-        return []
 
 def check_artist_id_by_name():
     print("\n🔍 Check Artist ID by Name")
