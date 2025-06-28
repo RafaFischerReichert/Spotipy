@@ -4,7 +4,7 @@ Fix_Custom_Genres.py - Fixes existing custom genres and redoes playlist addition
 
 This script:
 1. Loads existing custom genres from custom_artist_genres.json
-2. Normalizes all genres to lowercase and removes hyphens
+2. Normalizes all genres using the same logic as Artist_Cacher and Update_Cache
 3. Updates the custom_artist_genres.json file with normalized genres
 4. Updates the artist cache with the corrected custom genres
 5. Redoes playlist additions with the fixed data
@@ -16,11 +16,11 @@ from typing import Dict, List, Set, Any
 from config import REQUESTS_PER_SECOND, PLAYLIST_ID
 from spotify_client import sp
 from Playlist_Tools import get_existing_playlists, get_playlist_track_ids, RateLimiter, get_playlist_tracks, find_matching_playlists
-from Genre_Tools import normalize_genre, load_artist_cache, save_artist_cache
+from Genre_Tools import normalize_genre, load_artist_cache, save_artist_cache, deduplicate_hyphen_genres
 from Artist_Genres import load_custom_genres, save_custom_genres
 
 def fix_custom_genres() -> Dict[str, Dict[str, Any]]:
-    """Fix existing custom genres by normalizing them"""
+    """Fix existing custom genres by normalizing them using the same logic as other scripts"""
     print("🔧 Fixing existing custom genres...")
     
     # Load existing custom genres
@@ -39,16 +39,18 @@ def fix_custom_genres() -> Dict[str, Dict[str, Any]]:
             raw_genres = artist_data['genres']
             artist_name = artist_data.get('name', f'Artist_{artist_id}')
             
-            # Normalize genres using the core normalize_genre function
+            # Normalize genres using the same logic as Artist_Cacher and Update_Cache
             if raw_genres:
-                normalized_genres = []
-                for genre in raw_genres:
-                    normalized = normalize_genre(genre)
-                    if normalized:  # Only add if normalization returned results
-                        normalized_genres.extend(normalized)
+                # Apply normalize_genre to each genre and flatten
+                normalized = []
+                for g in raw_genres:
+                    normalized.extend(normalize_genre(g))
                 
                 # Remove duplicates while preserving order
-                normalized_genres = list(dict.fromkeys(normalized_genres))
+                normalized_genres = list(dict.fromkeys(normalized))
+                
+                # Deduplicate hyphen genres before saving (same as other scripts)
+                normalized_genres = deduplicate_hyphen_genres(normalized_genres)
                 
                 # Check if normalization changed anything
                 if normalized_genres != raw_genres:
@@ -90,11 +92,12 @@ def update_artist_cache_with_fixed_genres(fixed_genres: Dict[str, Dict[str, Any]
         custom_genre_list = fixed_data['genres']
         
         if artist_id in artist_cache:
-            # Update existing entry
+            # Update existing entry with custom genres
             artist_cache[artist_id]['genres'] = custom_genre_list.copy()
         else:
             # Create new entry
             artist_cache[artist_id] = {
+                'name': fixed_data.get('name', f'Artist_{artist_id}'),
                 'genres': custom_genre_list,
                 'country': None
             }
