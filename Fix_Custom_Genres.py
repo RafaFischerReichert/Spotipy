@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Fix_Custom_Genres.py - Fixes existing custom genres and redoes playlist additions
+"""Fixes existing custom genres and redoes playlist additions.
 
 This script:
 1. Loads existing custom genres from custom_artist_genres.json
@@ -20,7 +19,11 @@ from Genre_Tools import normalize_genre, load_artist_cache, save_artist_cache, d
 from Artist_Genres import load_custom_genres, save_custom_genres
 
 def fix_custom_genres() -> Dict[str, Dict[str, Any]]:
-    """Fix existing custom genres by normalizing them using the same logic as other scripts"""
+    """Fix existing custom genres by normalizing them using the same logic as other scripts.
+    
+    Returns:
+        Dictionary of fixed custom genres.
+    """
     print("🔧 Fixing existing custom genres...")
     
     # Load existing custom genres
@@ -81,7 +84,11 @@ def fix_custom_genres() -> Dict[str, Dict[str, Any]]:
     return fixed_genres
 
 def update_artist_cache_with_fixed_genres(fixed_genres: Dict[str, Dict[str, Any]]) -> None:
-    """Update the artist cache with the fixed custom genres"""
+    """Update the artist cache with the fixed custom genres.
+    
+    Args:
+        fixed_genres: Dictionary of fixed custom genres to update the cache with.
+    """
     print("\n🔄 Updating artist cache with fixed custom genres...")
     
     # Load existing cache
@@ -108,7 +115,11 @@ def update_artist_cache_with_fixed_genres(fixed_genres: Dict[str, Dict[str, Any]
     print("✅ Updated artist cache with fixed custom genres")
 
 def get_original_playlist_tracks_by_artist() -> Dict[str, List[str]]:
-    """Get all tracks from the original playlist, grouped by artist ID"""
+    """Get all tracks from the original playlist, grouped by artist ID.
+    
+    Returns:
+        Dictionary mapping artist IDs to lists of track IDs.
+    """
     print("📋 Loading tracks from original playlist...")
     
     # Get all tracks from the original playlist
@@ -130,7 +141,16 @@ def get_original_playlist_tracks_by_artist() -> Dict[str, List[str]]:
     return artist_tracks
 
 def create_new_playlist(playlist_name: str, track_ids: List[str], rate_limiter: RateLimiter) -> bool:
-    """Create a new playlist and add tracks to it"""
+    """Create a new playlist and add tracks to it.
+    
+    Args:
+        playlist_name: Name for the new playlist.
+        track_ids: List of track IDs to add to the playlist.
+        rate_limiter: Rate limiter instance for API calls.
+        
+    Returns:
+        True if successful, False otherwise.
+    """
     try:
         user_id = sp.current_user()['id']
         
@@ -158,7 +178,11 @@ def create_new_playlist(playlist_name: str, track_ids: List[str], rate_limiter: 
         return False
 
 def redo_playlist_additions(fixed_genres: Dict[str, Dict[str, Any]]) -> None:
-    """Redo playlist additions with the fixed custom genres"""
+    """Redo playlist additions with the fixed custom genres.
+    
+    Args:
+        fixed_genres: Dictionary of fixed custom genres to use for playlist creation.
+    """
     print("\n🎵 Redoing playlist additions with fixed custom genres...")
     print(f"📋 Working with original playlist: {PLAYLIST_ID}")
     

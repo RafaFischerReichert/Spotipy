@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-# ---
-# Cleanup_Playlists.py
-# Cleans up genre playlists by removing tracks that do not match the playlist's genre.
-# Uses improved matching logic and batch operations to ensure only correct tracks remain in each genre playlist.
-# ---
+"""Cleans up genre playlists by removing tracks that do not match the playlist's genre.
+
+This module cleans up genre playlists by removing tracks that do not match the 
+playlist's genre. Uses improved matching logic and batch operations to ensure 
+only correct tracks remain in each genre playlist.
+"""
 
 from typing import Dict, List
 from config import REQUESTS_PER_SECOND
@@ -12,7 +13,16 @@ from Playlist_Tools import get_existing_playlists, get_playlist_track_ids, RateL
 from Genre_Tools import normalize_genre, load_artist_cache, should_track_be_in_playlist
 
 def cleanup_playlist(playlist_id: str, playlist_name: str, rate_limiter: RateLimiter) -> Dict[str, int]:
-    """Clean up a single playlist by removing incorrect tracks"""
+    """Clean up a single playlist by removing incorrect tracks.
+    
+    Args:
+        playlist_id: The Spotify playlist ID to clean up.
+        playlist_name: The name of the playlist for display purposes.
+        rate_limiter: Rate limiter instance for API calls.
+        
+    Returns:
+        Dictionary with statistics about the cleanup operation.
+    """
     print(f"\n🧹 Cleaning playlist: {playlist_name}")
     
     # Load artist cache for faster genre lookup
@@ -89,7 +99,7 @@ def cleanup_playlist(playlist_id: str, playlist_name: str, rate_limiter: RateLim
     }
 
 def cleanup_all_genre_playlists() -> None:
-    """Clean up all genre playlists"""
+    """Clean up all genre playlists."""
     print("🧹 Genre Playlist Cleanup Tool")
     print("=" * 60)
     
@@ -148,7 +158,7 @@ def cleanup_all_genre_playlists() -> None:
     print("🎉 Cleanup completed!")
 
 def preview_cleanup() -> None:
-    """Preview what would be cleaned up without actually doing it"""
+    """Preview what would be cleaned up without actually doing it."""
     print("👀 Genre Playlist Cleanup Preview")
     print("=" * 60)
     

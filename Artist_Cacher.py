@@ -1,9 +1,11 @@
-# ---
-# Artist_Cacher.py
-# Caches genres and country info for all artists in a playlist.
-# Uses batch Spotify API requests and Wikipedia lookups to optimize API usage and speed up genre-based operations.
-# Updates and saves the artist cache for use by other scripts.
-# ---
+"""Caches genres and country info for all artists in a playlist.
+
+This module caches genres and country info for all artists in a playlist. 
+Uses batch Spotify API requests and Wikipedia lookups to optimize API usage 
+and speed up genre-based operations. Updates and saves the artist cache 
+for use by other scripts.
+"""
+
 from typing import Dict, List, Set, Any
 from spotify_client import sp, get_tracks_batch, get_artists_batch
 from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_genres, normalize_genre, deduplicate_hyphen_genres
@@ -15,10 +17,13 @@ from tqdm import tqdm
 from WikipediaAPI import get_artist_country_wikidata, get_artist_genres as get_wikipedia_genres
 
 def cache_artist_genres(playlist_id: str) -> None:
-    """
-    Cache genres for all artists in a playlist.
+    """Cache genres for all artists in a playlist.
+    
     Uses existing cache and updates it with new artist data.
     Optimized to use batch requests to reduce API calls.
+    
+    Args:
+        playlist_id: The Spotify playlist ID to cache artists from.
     """
     # Initialize rate limiter using config value
     rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)

@@ -1,8 +1,14 @@
+"""Check Spotify API status and rate limit information."""
+
 import time
 from spotify_client import sp
 
 def check_api_status():
-    """Check current API rate limit status"""
+    """Check current API rate limit status.
+    
+    Displays information about the current Spotify API status, including
+    whether the API is working and if rate limits have been exceeded.
+    """
     print("=== Spotify API Status Check ===\n")
     
     try:

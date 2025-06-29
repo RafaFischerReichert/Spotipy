@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Custom_Genre_Updater.py - Updates playlists with artists that have custom genres
+"""Updates playlists with artists that have custom genres.
 
 This script:
 1. Loads custom genres from custom_artist_genres.json
@@ -19,7 +18,11 @@ from Genre_Tools import normalize_genre
 from Artist_Genres import load_custom_genres
 
 def get_original_playlist_tracks_by_artist() -> Dict[str, List[str]]:
-    """Get all tracks from the original playlist, grouped by artist ID"""
+    """Get all tracks from the original playlist, grouped by artist ID.
+    
+    Returns:
+        Dictionary mapping artist IDs to lists of track IDs.
+    """
     print("📋 Loading tracks from original playlist...")
     
     # Get all tracks from the original playlist
@@ -43,7 +46,16 @@ def get_original_playlist_tracks_by_artist() -> Dict[str, List[str]]:
     return artist_tracks
 
 def create_new_playlist(playlist_name: str, track_ids: List[str], rate_limiter: RateLimiter) -> bool:
-    """Create a new playlist and add tracks to it"""
+    """Create a new playlist and add tracks to it.
+    
+    Args:
+        playlist_name: Name for the new playlist.
+        track_ids: List of track IDs to add to the playlist.
+        rate_limiter: Rate limiter instance for API calls.
+        
+    Returns:
+        True if successful, False otherwise.
+    """
     try:
         user_id = sp.current_user()['id']
         
@@ -71,7 +83,7 @@ def create_new_playlist(playlist_name: str, track_ids: List[str], rate_limiter: 
         return False
 
 def update_playlists_with_custom_genres() -> None:
-    """Main function to update playlists with custom genres"""
+    """Main function to update playlists with custom genres."""
     print("🎵 Custom Genre Playlist Updater")
     print("=" * 60)
     print(f"📋 Working with original playlist: {PLAYLIST_ID}")

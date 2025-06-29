@@ -1,11 +1,14 @@
-# ---
-# Manual_Country_Inputs.py
-# Prompts the user to manually input missing country information for artists in the cache.
-# Updates the cache with user-provided country data for each artist.
-# ---
+"""Prompts the user to manually input missing country information for artists.
+
+This module prompts the user to manually input missing country information for 
+artists in the cache. Updates the cache with user-provided country data for 
+each artist.
+"""
+
 from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_name_from_cache
 
 def prompt_and_update_countries():
+    """Prompt the user to manually input country information for artists without countries."""
     cache = load_artist_cache()
     updated = False
     null_country_artists = [aid for aid, data in cache.items() if data.get('country') is None]

@@ -1,8 +1,10 @@
-# ---
-# Genre_Ranker.py
-# Ranks and lists genres found in a playlist by frequency, using batch processing and normalization for accurate statistics.
-# Prints the percentage and count for each genre.
-# ---
+"""Ranks and lists genres found in a playlist by frequency.
+
+This module ranks and lists genres found in a playlist by frequency, using 
+batch processing and normalization for accurate statistics. Prints the 
+percentage and count for each genre.
+"""
+
 from collections import defaultdict
 from typing import Dict, List, Any, Set
 from config import REQUESTS_PER_SECOND
@@ -17,7 +19,11 @@ from WikipediaAPI import get_artist_country_wikidata
 
 
 def rank_playlist_genres(playlist_id: str) -> None:
-    """List genres found in a playlist, ranked by frequency with optimized batch processing"""
+    """List genres found in a playlist, ranked by frequency with optimized batch processing.
+    
+    Args:
+        playlist_id: The Spotify playlist ID to analyze for genre ranking.
+    """
     # Initialize rate limiter
     rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
     

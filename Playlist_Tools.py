@@ -1,8 +1,10 @@
-# ---
-# Playlist_Tools.py
-# Provides core playlist management utilities, including batch fetching, genre grouping, and optimized API usage for playlist creation and updates.
-# Used by most scripts for efficient playlist and track management.
-# ---
+"""Core playlist management utilities.
+
+This module provides core playlist management utilities, including batch fetching, 
+genre grouping, and optimized API usage for playlist creation and updates. 
+Used by most scripts for efficient playlist and track management.
+"""
+
 import time
 from typing import Dict, List, Set, Any
 from config import REQUESTS_PER_SECOND
@@ -12,11 +14,24 @@ from collections import defaultdict
 from WikipediaAPI import get_artist_country_wikidata
 
 class RateLimiter:
+    """Rate limiter for API requests to respect rate limits.
+    
+    Attributes:
+        requests_per_second: Maximum requests allowed per second.
+        last_request_time: Timestamp of the last request made.
+    """
+    
     def __init__(self, requests_per_second: float = REQUESTS_PER_SECOND):
+        """Initialize the rate limiter.
+        
+        Args:
+            requests_per_second: Maximum requests allowed per second. Defaults to REQUESTS_PER_SECOND.
+        """
         self.requests_per_second = requests_per_second
         self.last_request_time = 0.0
         
     def wait(self):
+        """Wait if necessary to respect the rate limit."""
         current_time = time.time()
         time_since_last_request = current_time - self.last_request_time
         if time_since_last_request < (1.0 / self.requests_per_second):
@@ -244,7 +259,14 @@ def process_tracks_batch_optimized(tracks: List[Dict[str, Any]], artist_cache: D
     return genre_tracks
 
 def format_time(seconds: float) -> str:
-    """Format seconds into a human readable time string."""
+    """Format seconds into a human readable time string.
+    
+    Args:
+        seconds: Number of seconds to format.
+        
+    Returns:
+        Formatted time string in HH:MM:SS format.
+    """
     from datetime import timedelta
     return str(timedelta(seconds=int(seconds)))
 

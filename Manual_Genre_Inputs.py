@@ -1,15 +1,24 @@
-# ---
-# Manual_Genre_Inputs.py
-# Allows manual input of genres for artists missing genre data in the cache.
-# Prompts the user for genres, normalizes and deduplicates them, and updates the cache.
-# ---
+"""Allows manual input of genres for artists missing genre data in the cache.
+
+This module allows manual input of genres for artists missing genre data in the 
+cache. Prompts the user for genres, normalizes and deduplicates them, and 
+updates the cache.
+"""
+
 import json
 import os
 from typing import Dict, List, Set, Optional, Any
 from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_genres, normalize_genre, deduplicate_hyphen_genres, get_artist_name_from_cache
 
 def get_artists_without_genres(artist_cache: Dict[str, Dict[str, Any]]) -> List[str]:
-    """Get list of artist IDs that have no genres in cache."""
+    """Get list of artist IDs that have no genres in cache.
+    
+    Args:
+        artist_cache: The artist cache dictionary to check.
+        
+    Returns:
+        List of artist IDs that have no genres.
+    """
     artists_without_genres = []
     for artist_id, data in artist_cache.items():
         genres = data.get('genres', [])

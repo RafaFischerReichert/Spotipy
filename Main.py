@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-# ---
-# Main.py
-# Orchestrates the entire genre playlist creation process.
-# Creates genre playlists, manages caching, and prints summary statistics for artists and playlists.
-# ---
+"""Orchestrates the entire genre playlist creation process.
+
+This module orchestrates the entire genre playlist creation process. 
+Creates genre playlists, manages caching, and prints summary statistics 
+for artists and playlists.
+"""
 
 import os
 import sys
@@ -16,7 +17,11 @@ from Genre_Tools import load_artist_cache
 from Artist_Genres import load_custom_genres
 
 def create_genre_playlists() -> bool:
-    """Create genre playlists from the source playlist"""
+    """Create genre playlists from the source playlist.
+    
+    Returns:
+        True if successful, False otherwise.
+    """
     print("=" * 60)
     print("Creating genre playlists...")
     print("=" * 60)
@@ -32,7 +37,10 @@ def create_genre_playlists() -> bool:
         return False
 
 def print_summary():
-    """Print a summary of the current state"""
+    """Print a summary of the current state.
+    
+    Displays statistics about artist cache, custom genres, and playlists.
+    """
     print("\n" + "=" * 60)
     print("SUMMARY")
     print("=" * 60)
@@ -67,7 +75,11 @@ def print_summary():
         print(f"📊 Playlists: Unable to fetch playlist stats ({str(e)})")
 
 def main():
-    """Main orchestration function"""
+    """Main orchestration function.
+    
+    Returns:
+        True if the process completed successfully, False otherwise.
+    """
     print("🎵 Spotify Genre Playlist Creator")
     print("=" * 60)
     print(f"Source Playlist ID: {PLAYLIST_ID}")

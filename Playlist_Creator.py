@@ -1,8 +1,10 @@
-# ---
-# Playlist_Creator.py
-# Creates genre playlists from a source playlist, using optimized batch processing and caching.
-# Minimizes API calls and speeds up playlist creation by batching and checking for existing playlists.
-# ---
+"""Creates genre playlists from a source playlist.
+
+This module creates genre playlists from a source playlist, using optimized 
+batch processing and caching. Minimizes API calls and speeds up playlist 
+creation by batching and checking for existing playlists.
+"""
+
 import time
 from typing import Dict, List, Set, Any
 from config import PLAYLIST_ID, REQUESTS_PER_SECOND
@@ -15,7 +17,11 @@ from Playlist_Tools import (
 )
 
 def create_genre_playlists_optimized(playlist_id: str) -> None:
-    """Create genre playlists with optimized batch processing and caching"""
+    """Create genre playlists with optimized batch processing and caching.
+    
+    Args:
+        playlist_id: The Spotify playlist ID to create genre playlists from.
+    """
     # Initialize rate limiter using config value
     rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
     

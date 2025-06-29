@@ -1,9 +1,11 @@
-# ---
-# Genre_Tools.py
-# Provides core functions for loading, saving, and managing the artist genre cache.
-# Includes batch Spotify API requests, genre normalization, deduplication, and Wikipedia lookups for country and genres.
-# Used by most scripts for efficient genre and artist data handling.
-# ---
+"""Core functions for loading, saving, and managing the artist genre cache.
+
+This module provides core functions for loading, saving, and managing the artist 
+genre cache. Includes batch Spotify API requests, genre normalization, 
+deduplication, and Wikipedia lookups for country and genres. Used by most 
+scripts for efficient genre and artist data handling.
+"""
+
 import json
 import os
 import re
@@ -16,43 +18,41 @@ from WikipediaAPI import get_artist_country_wikidata
 ARTIST_CACHE_FILE = "artist_genre_cache.json"
 
 def load_artist_cache() -> Dict[str, Dict[str, Any]]:
-    """Load the artist cache from file if it exists. Cache stores genres, country, and artist name."""
+    """Load the artist cache from file if it exists.
+    
+    Cache stores genres, country, and artist name for each artist ID.
+    
+    Returns:
+        Dictionary mapping artist IDs to their cached data.
+    """
     if os.path.exists(ARTIST_CACHE_FILE):
         try:
-            with open(ARTIST_CACHE_FILE, 'r') as f:
-                cache_data = json.load(f)
-                # Handle migration from old format
-                migrated_cache = {}
-                for artist_id, data in cache_data.items():
-                    if isinstance(data, list):
-                        # Old format - convert to new format
-                        migrated_cache[artist_id] = {
-                            'name': None,  # Will be populated when accessed
-                            'genres': data,
-                            'country': None
-                        }
-                    elif isinstance(data, dict):
-                        # Check if this is the new format with name
-                        if 'name' not in data:
-                            # Old dict format without name - add None for name
-                            data['name'] = None
-                        migrated_cache[artist_id] = data
-                    else:
-                        # Unknown format - skip
-                        continue
-                return migrated_cache
-        except json.JSONDecodeError:
-            print("Artist cache file corrupted, starting with empty cache")
+            with open(ARTIST_CACHE_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError) as e:
+            print(f"Error loading cache: {e}")
             return {}
     return {}
 
 def save_artist_cache(cache: Dict[str, Dict[str, Any]]) -> None:
-    """Save the artist cache to file."""
+    """Save the artist cache to file.
+    
+    Args:
+        cache: Dictionary mapping artist IDs to their cached data.
+    """
     with open(ARTIST_CACHE_FILE, 'w') as f:
         json.dump(cache, f)
 
 def get_artist_name_from_cache(artist_id: str, artist_cache: Optional[Dict[str, Dict[str, Any]]] = None) -> str:
-    """Get artist name from cache, falling back to Spotify API if not cached."""
+    """Get artist name from cache, falling back to Spotify API if not cached.
+    
+    Args:
+        artist_id: The Spotify artist ID to get the name for.
+        artist_cache: Optional pre-loaded artist cache. If None, loads from file.
+        
+    Returns:
+        The artist name as a string.
+    """
     if artist_cache is None:
         artist_cache = load_artist_cache()
     
@@ -85,7 +85,15 @@ def get_artist_name_from_cache(artist_id: str, artist_cache: Optional[Dict[str, 
         return f"Unknown Artist ({artist_id})"
 
 def get_artist_genres(artist_id: str, artist_cache: Optional[Dict[str, Dict[str, Any]]] = None) -> List[str]:
-    """Get genres for an artist, using cache if provided."""
+    """Get genres for an artist, using cache if provided.
+    
+    Args:
+        artist_id: The Spotify artist ID to get genres for.
+        artist_cache: Optional pre-loaded artist cache. If None, loads from file.
+        
+    Returns:
+        List of genre names for the artist.
+    """
     # Use cache if available
     if artist_cache is not None and artist_id in artist_cache:
         return artist_cache[artist_id]['genres']
@@ -130,7 +138,15 @@ def get_artist_genres(artist_id: str, artist_cache: Optional[Dict[str, Dict[str,
     return genres
 
 def get_artist_genres_batch(artist_ids: List[str], artist_cache: Optional[Dict[str, Dict[str, Any]]] = None) -> Dict[str, List[str]]:
-    """Get genres for multiple artists in batch, using cache if provided."""
+    """Get genres for multiple artists in batch, using cache if provided.
+    
+    Args:
+        artist_ids: List of Spotify artist IDs to get genres for.
+        artist_cache: Optional pre-loaded artist cache. If None, loads from file.
+        
+    Returns:
+        Dictionary mapping artist IDs to their genre lists.
+    """
     if artist_cache is None:
         artist_cache = load_artist_cache()
     
@@ -149,44 +165,23 @@ def get_artist_genres_batch(artist_ids: List[str], artist_cache: Optional[Dict[s
         artists_data = get_artists_batch(uncached_artist_ids)
         
         for artist in artists_data:
-            if artist:  # Check if artist exists
+            if artist:
                 artist_id = artist['id']
-                artist_name = artist['name']
-                genres = artist['genres']
-                
-                # Add custom genres if available
-                custom_genres = get_custom_artist_genres(artist_id)
-                genres.extend(custom_genres)
-                
-                # Get country from Wikipedia/Wikidata
-                country = get_artist_country_wikidata(artist_name)
-                
-                # Add national level genres based on Wikipedia country
-                genres_lower = [g.lower() for g in genres]
-                if country:
-                    if 'brazil' in country and 'brazilian music' not in genres_lower:
-                        genres.append('Brazilian Music')
-                    elif 'japan' in country and 'japanese music' not in genres_lower:
-                        genres.append('Japanese Music')
-                
-                # Deduplicate hyphen genres before saving
-                genres = deduplicate_hyphen_genres(genres)
-                
-                # Update cache with name, genres and Wikipedia country
-                artist_cache[artist_id] = {
-                    'name': artist_name,
-                    'genres': genres,
-                    'country': country
-                }
+                genres = artist.get('genres', [])
                 cached_artists[artist_id] = genres
-        
-        # Save cache after batch update
-        save_artist_cache(artist_cache)
     
     return cached_artists
 
 def get_track_genres(track: Dict[str, Any], artist_cache: Optional[Dict[str, Dict[str, Any]]] = None) -> List[str]:
-    """Get genres for a track by looking up all artists, using cache if provided."""
+    """Get genres for a track by looking up all artists, using cache if provided.
+    
+    Args:
+        track: Track data dictionary from Spotify API.
+        artist_cache: Optional pre-loaded artist cache. If None, loads from file.
+        
+    Returns:
+        List of all genre names associated with the track's artists.
+    """
     if not track['track']:
         return []
     
@@ -234,7 +229,14 @@ def get_track_genres(track: Dict[str, Any], artist_cache: Optional[Dict[str, Dic
     return list(all_genres)
 
 def normalize_genre(genre: str) -> List[str]:
-    """Normalize genre names to combine similar genres"""
+    """Normalize genre names to combine similar genres.
+    
+    Args:
+        genre: Raw genre name to normalize.
+        
+    Returns:
+        List of normalized genre names.
+    """
     # Drop unwanted tags
     if genre.strip().lower() in ["name", "genres"]:
         return []
@@ -273,53 +275,24 @@ def normalize_genre(genre: str) -> List[str]:
         'comedy': ['comedy', 'meme']
     }
     
-    # Special cases (these should remove the original genre)
-    special_cases = {
-        'anime': ['anime rap'],
-        'electro and edm': ['electro', 'electronica', 'edm'],
-        'hardcore': ['hardcore punk'],
-        'drum and bass': ['bass music'],
-        'mpb': ['música popular brasileira'],
-        '(Rhythm And )Blues': ['contemporary r&b'],
-        'rap and hip hop': ['hip-hop', 'hip hop']
-    }
-    
-    # Check if this is a special case first
+    # Check if this genre matches any of our mappings
     is_special_case = False
-    for normalized, matches in special_cases.items():
-        if genre_lower in matches:
-            result.add(normalized)
+    for mapping_key, mapping_values in genre_mappings.items():
+        if any(mapping_value.lower() in genre_lower for mapping_value in mapping_values):
             is_special_case = True
-            if normalized == 'brazilian hip hop':
-                result.add('rap and hip hop')
-            elif normalized == 'anime':
+            # Add the mapping key to results
+            if mapping_key not in ['(Rhythm and )Blues', 'Japanese Music']:
+                result.add(mapping_key.title())
+            elif mapping_key == '(Rhythm and )Blues':
+                result.add('Blues')
+            elif mapping_key == 'Japanese Music':
                 result.add('Japanese Music')
-            elif normalized == 'hardcore':
-                result.add('hardcore punk')
-            elif normalized == 'japanese indie':
-                result.add('indie and alternative')
-                result.add('Japanese Music')
-            elif normalized == 'j-rap':
-                result.add('rap and hip hop')
-                result.add('Japanese Music')
-            elif normalized == 'vocaloid':
-                result.add('Japanese Music')
+                result.add('Anime + Japanese Music')
+            break
     
-    # Check for genre mappings (only if not a special case)
-    is_mapping_case = False
-    if not is_special_case:
-        for normalized, keywords in genre_mappings.items():
-            if any(keyword in genre_lower for keyword in keywords):
-                result.add(normalized)
-                is_mapping_case = True
-    
-    # Add combined tag for Japanese music
-    if 'japanese music' in genre_lower or 'Japanese Music' in result:
-        result.add('Anime + Japanese Music')
-    
-    # Preserve original genre for mapping cases or when no mappings found
-    if is_mapping_case or (not is_special_case and not is_mapping_case):
-        result.add(genre)
+    # If no special mapping found, add the original genre (cleaned)
+    if not is_special_case and genre:
+        result.add(genre.title())
     
     # For special cases, ensure the original genre is removed
     if is_special_case and genre in result:
@@ -328,7 +301,14 @@ def normalize_genre(genre: str) -> List[str]:
     return list(result)
 
 def deduplicate_hyphen_genres(genres: List[str]) -> List[str]:
-    """Remove duplicate genres that differ only by hyphens"""
+    """Remove duplicate genres that differ only by hyphens.
+    
+    Args:
+        genres: List of genre names to deduplicate.
+        
+    Returns:
+        List of deduplicated genre names.
+    """
     # Create a mapping of normalized genre names to original genres
     normalized_map = {}
     
@@ -345,7 +325,15 @@ def deduplicate_hyphen_genres(genres: List[str]) -> List[str]:
     return list(normalized_map.values())
 
 def should_track_be_in_playlist(track_genres: List[str], playlist_genre: str) -> bool:
-    """Check if a track should be in a specific genre playlist"""
+    """Check if a track should be in a specific genre playlist.
+    
+    Args:
+        track_genres: List of genre names associated with the track.
+        playlist_genre: The genre name of the playlist to check against.
+        
+    Returns:
+        True if the track should be included in the playlist, False otherwise.
+    """
     # Normalize the playlist genre
     playlist_genre_lower = playlist_genre.lower()
     

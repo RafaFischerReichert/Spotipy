@@ -1,13 +1,23 @@
-# ---
-# WikipediaAPI.py
-# Provides functions to fetch genres and country information for artists from Wikipedia and Wikidata.
-# Used to supplement Spotify data with additional genre and country info for improved accuracy.
-# ---
+"""Provides functions to fetch genres and country information for artists from Wikipedia and Wikidata.
+
+This module provides functions to fetch genres and country information for artists 
+from Wikipedia and Wikidata. Used to supplement Spotify data with additional 
+genre and country info for improved accuracy.
+"""
+
 import requests
 import mwparserfromhell
 import re
 
 def get_artist_genres(artist_name):
+    """Get genres for an artist from Wikipedia.
+    
+    Args:
+        artist_name: The name of the artist to search for.
+        
+    Returns:
+        List of genre names in lowercase, or None if not found.
+    """
     # Step 1: Format artist name for Wikipedia
     page_title = artist_name.replace(" ", "_")
 
@@ -47,7 +57,14 @@ def get_artist_genres(artist_name):
     return None
 
 def parse_complex_genres(genres_raw):
-    """Parse complex genre wikitext and extract clean genre names"""
+    """Parse complex genre wikitext and extract clean genre names.
+    
+    Args:
+        genres_raw: Raw wikitext content containing genre information.
+        
+    Returns:
+        List of cleaned genre names.
+    """
     if not genres_raw:
         return []
     
@@ -120,10 +137,16 @@ def parse_complex_genres(genres_raw):
     return cleaned_genres
 
 def get_artist_country_wikidata(artist_name):
-    """
-    Retrieve the country of origin for an artist using Wikidata via Wikipedia API.
-    Tries to find country of origin (P495), citizenship (P27), or country for musical group (P1532).
-    Returns the country name as a string, or None if not found.
+    """Retrieve the country of origin for an artist using Wikidata via Wikipedia API.
+    
+    Tries to find country of origin (P495), citizenship (P27), or country for 
+    musical group (P1532). Returns the country name as a string, or None if not found.
+    
+    Args:
+        artist_name: The name of the artist to search for.
+        
+    Returns:
+        Country name as a string, or None if not found.
     """
     try:
         # Step 1: Search for the artist's Wikipedia page

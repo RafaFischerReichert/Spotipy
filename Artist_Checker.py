@@ -1,8 +1,10 @@
-# ---
-# Artist_Checker.py
-# Provides a menu-driven tool to check artist IDs, genres, and update the artist cache.
-# Allows searching for artists by name or URL, viewing genres, and entering genres manually if missing.
-# ---
+"""Provides a menu-driven tool to check artist IDs, genres, and update the artist cache.
+
+This module provides a menu-driven tool to check artist IDs, genres, and update 
+the artist cache. Allows searching for artists by name or URL, viewing genres, 
+and entering genres manually if missing.
+"""
+
 import re
 from typing import Dict, List, Any
 from Playlist_Tools import sp
@@ -14,7 +16,13 @@ from Artist_Genres import search_artist_by_name, extract_artist_id_from_url
 ARTIST_CACHE_FILE = "artist_genre_cache.json"
 
 def update_tracks_for_artist(artist_id: str, artist_genres: List[str], cache: Dict[str, Dict[str, Any]]) -> None:
-    """Update the cache for an artist with their genres."""
+    """Update the cache for an artist with their genres.
+    
+    Args:
+        artist_id: The Spotify artist ID to update.
+        artist_genres: List of genre names for the artist.
+        cache: The artist cache dictionary to update.
+    """
     # Get artist name from cache or API
     artist_name = get_artist_name_from_cache(artist_id, cache)
     
@@ -28,7 +36,11 @@ def update_tracks_for_artist(artist_id: str, artist_genres: List[str], cache: Di
     print(f"\nUpdated cache for artist {artist_name} ({artist_id})")
 
 def print_artist_genres(artist_id: str):
-    """Print all genres for a given artist and update artist cache"""
+    """Print all genres for a given artist and update artist cache.
+    
+    Args:
+        artist_id: The Spotify artist ID to check genres for.
+    """
     try:
         # Load current cache
         cache = load_artist_cache()
@@ -69,6 +81,7 @@ def print_artist_genres(artist_id: str):
         print(f"Error getting artist data: {str(e)}")
 
 def check_artist_id_by_name():
+    """Search for an artist by name and display results."""
     print("\n🔍 Check Artist ID by Name")
     print("=" * 60)
     artist_name = input("Enter artist name to search: ").strip()
@@ -115,6 +128,7 @@ def check_artist_id_by_name():
 
 
 def main_menu():
+    """Display the main menu and handle user interactions."""
     print("🎵 Artist Checker")
     print("=" * 60)
     while True:

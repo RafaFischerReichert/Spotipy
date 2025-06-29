@@ -1,21 +1,22 @@
-# ---
-# Mess_Lister.py
-# Lists and exports artists with more than a specified number of genres.
-# Useful for identifying and analyzing artists with excessive or messy genre assignments in the cache.
-# ---
+"""Lists and exports artists with more than a specified number of genres.
+
+This module lists and exports artists with more than a specified number of genres. 
+Useful for identifying and analyzing artists with excessive or messy genre 
+assignments in the cache.
+"""
+
 import json
 from typing import List, Dict
 from Genre_Tools import load_artist_cache, get_artist_name_from_cache
 
 def list_artists_with_multiple_genres(min_genres: int = 2) -> List[str]:
-    """
-    List all artist IDs that have more than the specified number of genres.
+    """List all artist IDs that have more than the specified number of genres.
     
     Args:
-        min_genres: Minimum number of genres required (default: 2)
+        min_genres: Minimum number of genres required. Defaults to 2.
     
     Returns:
-        List of artist IDs that have more than min_genres genres
+        List of artist IDs that have more than min_genres genres.
     """
     # Load artist cache
     artist_cache = load_artist_cache()
@@ -31,12 +32,11 @@ def list_artists_with_multiple_genres(min_genres: int = 2) -> List[str]:
     return artists_with_multiple_genres
 
 def export_artists_with_multiple_genres(min_genres: int = 2, output_file: str = "artists_with_multiple_genres.json"):
-    """
-    Export all artists that have more than the specified number of genres to a JSON file.
+    """Export all artists that have more than the specified number of genres to a JSON file.
     
     Args:
-        min_genres: Minimum number of genres required (default: 2)
-        output_file: Name of the output JSON file (default: "artists_with_multiple_genres.json")
+        min_genres: Minimum number of genres required. Defaults to 2.
+        output_file: Name of the output JSON file. Defaults to "artists_with_multiple_genres.json".
     """
     # Load artist cache
     artist_cache = load_artist_cache()
@@ -71,11 +71,10 @@ def export_artists_with_multiple_genres(min_genres: int = 2, output_file: str = 
     print(f"Exported {len(artists_with_multiple_genres)} artists with more than {min_genres} genres to {output_file}")
 
 def print_artists_with_multiple_genres(min_genres: int = 2):
-    """
-    Print all artists that have more than the specified number of genres.
+    """Print all artists that have more than the specified number of genres.
     
     Args:
-        min_genres: Minimum number of genres required (default: 2)
+        min_genres: Minimum number of genres required. Defaults to 2.
     """
     # Load artist cache
     artist_cache = load_artist_cache()

@@ -1,3 +1,10 @@
+"""Custom artist genres management.
+
+This module provides functions for loading, saving, and managing custom artist 
+genres stored in a JSON file. Allows manual addition and retrieval of custom 
+genre assignments for artists.
+"""
+
 import json
 import os
 import re
@@ -7,7 +14,11 @@ from typing import List, Dict, Any
 CUSTOM_GENRES_FILE = "custom_artist_genres.json"
 
 def load_custom_genres() -> Dict[str, Dict[str, Any]]:
-    """Load custom artist genres from JSON file"""
+    """Load custom artist genres from JSON file.
+    
+    Returns:
+        Dictionary mapping artist IDs to their custom genre data.
+    """
     if os.path.exists(CUSTOM_GENRES_FILE):
         try:
             with open(CUSTOM_GENRES_FILE, 'r', encoding='utf-8') as f:
@@ -18,7 +29,14 @@ def load_custom_genres() -> Dict[str, Dict[str, Any]]:
     return {}
 
 def get_custom_artist_genres(artist_id: str) -> List[str]:
-    """Get custom genres for a specific artist from the JSON file"""
+    """Get custom genres for a specific artist from the JSON file.
+    
+    Args:
+        artist_id: The Spotify artist ID to get custom genres for.
+        
+    Returns:
+        List of custom genre names for the artist.
+    """
     custom_genres = load_custom_genres()
     
     if artist_id in custom_genres:
@@ -31,12 +49,22 @@ def get_custom_artist_genres(artist_id: str) -> List[str]:
     return []
 
 def save_custom_genres(custom_genres: Dict[str, Dict[str, Any]]) -> None:
-    """Save custom artist genres to JSON file"""
+    """Save custom artist genres to JSON file.
+    
+    Args:
+        custom_genres: Dictionary mapping artist IDs to their custom genre data.
+    """
     with open(CUSTOM_GENRES_FILE, 'w', encoding='utf-8') as f:
         json.dump(custom_genres, f, indent=2, ensure_ascii=False)
 
 def add_custom_genres(artist_id: str, genres: List[str], artist_name: str = None) -> None:
-    """Add or update custom genres for an artist"""
+    """Add or update custom genres for an artist.
+    
+    Args:
+        artist_id: The Spotify artist ID to add custom genres for.
+        genres: List of custom genre names to assign to the artist.
+        artist_name: Optional artist name to store with the genres.
+    """
     custom_genres = load_custom_genres()
     
     custom_genres[artist_id] = {
@@ -47,7 +75,14 @@ def add_custom_genres(artist_id: str, genres: List[str], artist_name: str = None
     save_custom_genres(custom_genres)
 
 def search_artist_by_name(artist_name: str) -> List[Dict[str, Any]]:
-    """Search for an artist by name and return results"""
+    """Search for an artist by name and return results.
+    
+    Args:
+        artist_name: The name of the artist to search for.
+        
+    Returns:
+        List of artist data dictionaries from Spotify search results.
+    """
     from spotify_client import sp
     try:
         results = sp.search(q=artist_name, type='artist', limit=10)
@@ -57,7 +92,17 @@ def search_artist_by_name(artist_name: str) -> List[Dict[str, Any]]:
         return []
 
 def extract_artist_id_from_url(url: str) -> str:
-    """Extract artist ID from Spotify artist URL."""
+    """Extract artist ID from Spotify artist URL.
+    
+    Args:
+        url: Spotify artist URL to extract ID from.
+        
+    Returns:
+        The extracted artist ID.
+        
+    Raises:
+        ValueError: If the artist ID cannot be extracted from the URL.
+    """
     # Remove everything after ?si= if present
     if '?si=' in url:
         url = url.split('?si=')[0]

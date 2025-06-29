@@ -1,8 +1,10 @@
-# ---
-# Genre_Lister.py
-# Lists all unique genres found in a playlist, using batch processing and normalization for efficiency and accuracy.
-# Prints the total number of unique genres found.
-# ---
+"""Lists all unique genres found in a playlist.
+
+This module lists all unique genres found in a playlist, using batch processing 
+and normalization for efficiency and accuracy. Prints the total number of 
+unique genres found.
+"""
+
 from typing import Dict, List, Set, Any
 from config import REQUESTS_PER_SECOND
 from Playlist_Tools import (
@@ -14,7 +16,11 @@ from Playlist_Tools import (
 from Genre_Tools import load_artist_cache, normalize_genre
 
 def list_playlist_genres(playlist_id: str) -> None:
-    """List all unique genres found in a playlist with optimized batch processing"""
+    """List all unique genres found in a playlist with optimized batch processing.
+    
+    Args:
+        playlist_id: The Spotify playlist ID to analyze for genres.
+    """
     # Initialize rate limiter
     rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
     

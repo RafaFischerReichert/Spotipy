@@ -1,8 +1,10 @@
-# ---
-# WikipediaGenres.py
-# Uses Wikipedia to fetch and normalize genres for artists missing genre data.
-# Saves the results to a JSON file for further use in the genre cache or custom genres.
-# ---
+"""Uses Wikipedia to fetch and normalize genres for artists missing genre data.
+
+This module uses Wikipedia to fetch and normalize genres for artists missing 
+genre data. Saves the results to a JSON file for further use in the genre 
+cache or custom genres.
+"""
+
 import json
 import re
 import time
@@ -10,7 +12,14 @@ from WikipediaAPI import get_artist_genres
 from Genre_Tools import normalize_genre
 
 def extract_artist_names_from_json(filename):
-    """Extract artist names from the artists_without_genres.json file"""
+    """Extract artist names from the artists_without_genres.json file.
+    
+    Args:
+        filename: Path to the JSON file containing artist data.
+        
+    Returns:
+        Dictionary mapping artist IDs to artist names.
+    """
     artists = {}
     
     try:
@@ -33,7 +42,14 @@ def extract_artist_names_from_json(filename):
         return extract_artist_names_from_file('artists_without_genres.txt')
 
 def extract_artist_names_from_file(filename):
-    """Extract artist names from the artists_without_genres.txt file (fallback)"""
+    """Extract artist names from the artists_without_genres.txt file (fallback).
+    
+    Args:
+        filename: Path to the text file containing artist data.
+        
+    Returns:
+        Dictionary mapping artist IDs to artist names.
+    """
     artists = {}
     
     with open(filename, 'r', encoding='utf-8') as file:
@@ -49,7 +65,15 @@ def extract_artist_names_from_file(filename):
     return artists
 
 def get_genres_for_artists(artists, delay=1):
-    """Get genres for each artist using Wikipedia API with rate limiting"""
+    """Get genres for each artist using Wikipedia API with rate limiting.
+    
+    Args:
+        artists: Dictionary mapping artist IDs to artist names.
+        delay: Delay in seconds between API requests. Defaults to 1.
+        
+    Returns:
+        Dictionary mapping artist IDs to their genre data.
+    """
     results = {}
     total_artists = len(artists)
     
@@ -95,13 +119,19 @@ def get_genres_for_artists(artists, delay=1):
     return results
 
 def save_results_to_json(results, filename):
-    """Save the results to a JSON file"""
+    """Save the results to a JSON file.
+    
+    Args:
+        results: Dictionary of results to save.
+        filename: Path to the output JSON file.
+    """
     with open(filename, 'w', encoding='utf-8') as file:
         json.dump(results, file, indent=2, ensure_ascii=False)
     
     print(f"Results saved to {filename}")
 
 def main():
+    """Main function to process artists and fetch their genres from Wikipedia."""
     # Extract artist names from the JSON file
     print("Extracting artist names from artists_without_genres.json...")
     artists = extract_artist_names_from_json('artists_without_genres.json')

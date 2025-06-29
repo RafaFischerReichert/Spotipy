@@ -1,8 +1,10 @@
-# ---
-# spotify_client.py
-# Initializes the Spotify API client and provides utility functions for robust API access.
-# Includes retry logic for artist lookups and is used by most scripts for Spotify API operations.
-# ---
+"""Spotify API client initialization and utility functions.
+
+This module initializes the Spotify API client and provides utility functions 
+for robust API access. Includes retry logic for artist lookups and is used 
+by most scripts for Spotify API operations.
+"""
+
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import time
@@ -18,7 +20,19 @@ sp: spotipy.Spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
 ))
 
 def get_artist_with_retry(artist_id: str, max_retries: int = 3, base_delay: int = 1) -> Dict[str, Any]:
-    """Get artist data with exponential backoff retry logic"""
+    """Get artist data with exponential backoff retry logic.
+    
+    Args:
+        artist_id: The Spotify artist ID to retrieve.
+        max_retries: Maximum number of retry attempts. Defaults to 3.
+        base_delay: Base delay in seconds for exponential backoff. Defaults to 1.
+        
+    Returns:
+        Dict containing artist data from Spotify API.
+        
+    Raises:
+        Exception: If all retry attempts fail.
+    """
     for attempt in range(max_retries):
         try:
             return sp.artist(artist_id)
@@ -31,7 +45,15 @@ def get_artist_with_retry(artist_id: str, max_retries: int = 3, base_delay: int 
                 raise
 
 def get_artists_batch(artist_ids: List[str], batch_size: int = 50) -> List[Dict[str, Any]]:
-    """Get multiple artists in a single API call to reduce requests."""
+    """Get multiple artists in a single API call to reduce requests.
+    
+    Args:
+        artist_ids: List of Spotify artist IDs to retrieve.
+        batch_size: Number of artists to request per API call. Defaults to 50.
+        
+    Returns:
+        List of artist data dictionaries from Spotify API.
+    """
     all_artists = []
     
     for i in range(0, len(artist_ids), batch_size):
@@ -53,7 +75,15 @@ def get_artists_batch(artist_ids: List[str], batch_size: int = 50) -> List[Dict[
     return all_artists
 
 def get_tracks_batch(track_ids: List[str], batch_size: int = 50) -> List[Dict[str, Any]]:
-    """Get multiple tracks in a single API call to reduce requests."""
+    """Get multiple tracks in a single API call to reduce requests.
+    
+    Args:
+        track_ids: List of Spotify track IDs to retrieve.
+        batch_size: Number of tracks to request per API call. Defaults to 50.
+        
+    Returns:
+        List of track data dictionaries from Spotify API.
+    """
     all_tracks = []
     
     for i in range(0, len(track_ids), batch_size):

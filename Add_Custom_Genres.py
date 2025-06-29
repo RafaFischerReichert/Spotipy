@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-# ---
-# Add_Custom_Genres.py
-# Allows manual addition, update, and removal of custom genres for artists.
-# Includes features to search for artists, view and edit custom genres, and store them in a JSON file.
-# ---
+"""Allows manual addition, update, and removal of custom genres for artists.
 
-"""
-Add_Custom_Genres.py - Manually add custom genres for artists
+This module allows manual addition, update, and removal of custom genres for 
+artists. Includes features to search for artists, view and edit custom genres, 
+and store them in a JSON file.
 
 This script allows you to:
 1. Add custom genres for artists not in the cache
@@ -21,7 +18,14 @@ from Genre_Tools import get_artist_name_from_cache, load_artist_cache, normalize
 from spotify_client import sp
 
 def get_artist_by_id(artist_id: str) -> Dict[str, Any]:
-    """Get artist details by ID, using cache when possible"""
+    """Get artist details by ID, using cache when possible.
+    
+    Args:
+        artist_id: The Spotify artist ID to get details for.
+        
+    Returns:
+        Dictionary containing artist data, or empty dict if not found.
+    """
     # First try to get from cache
     artist_cache = load_artist_cache()
     cached_name = artist_cache.get(artist_id, {}).get('name')
@@ -41,7 +45,13 @@ def get_artist_by_id(artist_id: str) -> Dict[str, Any]:
         return {}
 
 def add_artist_custom_genres(artist_id: str, artist_name: str, genres: List[str]) -> None:
-    """Add or update custom genres for an artist"""
+    """Add or update custom genres for an artist.
+    
+    Args:
+        artist_id: The Spotify artist ID to add custom genres for.
+        artist_name: The name of the artist.
+        genres: List of genre names to assign to the artist.
+    """
     # Load existing custom genres
     custom_genres = load_custom_genres()
     
@@ -67,7 +77,7 @@ def add_artist_custom_genres(artist_id: str, artist_name: str, genres: List[str]
     print(f"✅ Added custom genres for {artist_name}: {', '.join(normalized_genres)}")
 
 def view_custom_genres() -> None:
-    """View all current custom genres"""
+    """View all current custom genres."""
     custom_genres = load_custom_genres()
     
     if not custom_genres:
@@ -84,7 +94,7 @@ def view_custom_genres() -> None:
             print(f"🎤 {name} ({artist_id}): {', '.join(genres) if genres else 'No genres'}")
 
 def search_and_add_artist() -> None:
-    """Search for an artist and add custom genres"""
+    """Search for an artist and add custom genres."""
     print("\n🔍 Artist Search and Custom Genre Addition")
     print("=" * 60)
     
@@ -141,7 +151,7 @@ def search_and_add_artist() -> None:
         return
 
 def add_by_artist_id() -> None:
-    """Add custom genres by artist ID"""
+    """Add custom genres by artist ID."""
     print("\n🆔 Add Custom Genres by Artist ID")
     print("=" * 60)
     
@@ -171,7 +181,11 @@ def add_by_artist_id() -> None:
     add_artist_custom_genres(artist_id, artist_name, genres)
 
 def remove_artist_custom_genres(artist_id: str) -> None:
-    """Remove custom genres for an artist"""
+    """Remove custom genres for an artist.
+    
+    Args:
+        artist_id: The Spotify artist ID to remove custom genres for.
+    """
     custom_genres = load_custom_genres()
     
     if artist_id in custom_genres:
@@ -183,7 +197,7 @@ def remove_artist_custom_genres(artist_id: str) -> None:
         print("❌ Artist not found in custom genres")
 
 def main():
-    """Main function"""
+    """Main function for the custom genre manager."""
     print("🎵 Custom Genre Manager")
     print("=" * 60)
     
