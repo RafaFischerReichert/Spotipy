@@ -114,13 +114,19 @@ def update_artist_cache_with_fixed_genres(fixed_genres: Dict[str, Dict[str, Any]
     
     print("✅ Updated artist cache with fixed custom genres")
 
-def get_original_playlist_tracks_by_artist() -> Dict[str, List[str]]:
+def get_original_playlist_tracks_by_artist(rate_limiter: RateLimiter) -> Dict[str, List[str]]:
     """Get all tracks from the original playlist, grouped by artist ID.
+    
+    Args:
+        rate_limiter: Rate limiter instance for API calls.
     
     Returns:
         Dictionary mapping artist IDs to lists of track IDs.
     """
     print("📋 Loading tracks from original playlist...")
+    
+    # Apply rate limiting before the first API call
+    rate_limiter.wait()
     
     # Get all tracks from the original playlist
     tracks = get_playlist_tracks(PLAYLIST_ID)
@@ -152,9 +158,12 @@ def create_new_playlist(playlist_name: str, track_ids: List[str], rate_limiter: 
         True if successful, False otherwise.
     """
     try:
+        # Apply rate limiting before API calls
+        rate_limiter.wait()
         user_id = sp.current_user()['id']
         
         # Create the playlist
+        rate_limiter.wait()
         playlist = sp.user_playlist_create(
             user=user_id,
             name=playlist_name,
@@ -167,8 +176,8 @@ def create_new_playlist(playlist_name: str, track_ids: List[str], rate_limiter: 
         # Add tracks to playlist in chunks of 50
         for i in range(0, len(track_ids), 50):
             chunk = track_ids[i:i + 50]
-            sp.playlist_add_items(playlist_id, chunk)
             rate_limiter.wait()
+            sp.playlist_add_items(playlist_id, chunk)
         
         print(f"   ➕ Added {len(track_ids)} tracks to '{playlist_name}'")
         return True
@@ -186,13 +195,15 @@ def redo_playlist_additions(fixed_genres: Dict[str, Dict[str, Any]]) -> None:
     print("\n🎵 Redoing playlist additions with fixed custom genres...")
     print(f"📋 Working with original playlist: {PLAYLIST_ID}")
     
-    # Initialize rate limiter
-    rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
+    # Initialize rate limiter with more conservative settings
+    # Use 2 requests per second instead of 3 to be safer
+    rate_limiter = RateLimiter(requests_per_second=2.0)
     
     # Get tracks from original playlist, grouped by artist
-    original_artist_tracks = get_original_playlist_tracks_by_artist()
+    original_artist_tracks = get_original_playlist_tracks_by_artist(rate_limiter)
     
-    # Get existing playlists
+    # Get existing playlists with rate limiting
+    rate_limiter.wait()
     existing_playlists = get_existing_playlists()
     print(f"📊 Found {len(existing_playlists)} existing playlists")
     
@@ -211,86 +222,103 @@ def redo_playlist_additions(fixed_genres: Dict[str, Dict[str, Any]]) -> None:
     # Collect all tracks by normalized genre for potential new playlist creation
     genre_tracks: Dict[str, Set[str]] = {}
     
-    # Process each artist
+    # Process each artist in batches to avoid overwhelming the API
     total_updates = 0
     artists_processed = 0
     playlists_updated = set()
+    batch_size = 5  # Process 5 artists at a time
+    pause_between_batches = 10  # Pause 10 seconds between batches
     
-    for artist_id, artist_data in artists_with_genres.items():
-        artist_name = artist_data.get('name', f'Artist_{artist_id}')
-        raw_genres = artist_data['genres']  # These are already normalized from the fix
+    # Convert to list for batch processing
+    artists_list = list(artists_with_genres.items())
+    
+    for batch_start in range(0, len(artists_list), batch_size):
+        batch_end = min(batch_start + batch_size, len(artists_list))
+        current_batch = artists_list[batch_start:batch_end]
         
-        # Get tracks for this artist from the original playlist
-        artist_tracks = original_artist_tracks[artist_id]
+        print(f"\n📦 Processing batch {batch_start // batch_size + 1}/{(len(artists_list) + batch_size - 1) // batch_size}")
+        print(f"📦 Artists in this batch: {len(current_batch)}")
         
-        print(f"\n🎤 Processing: {artist_name}")
-        print(f"   Fixed genres: {', '.join(raw_genres)}")
-        print(f"   Tracks in original playlist: {len(artist_tracks)}")
-        
-        # Normalize all genres first (for playlist matching)
-        all_normalized_genres = set()
-        for raw_genre in raw_genres:
-            normalized_genres = normalize_genre(raw_genre)
-            all_normalized_genres.update(normalized_genres)
-        
-        print(f"   Normalized for playlists: {', '.join(all_normalized_genres)}")
-        
-        # Find matching playlists for each normalized genre
-        playlists_to_update = set()
-        for norm_genre in all_normalized_genres:
-            matching_playlists = find_matching_playlists(norm_genre, existing_playlists)
-            playlists_to_update.update(matching_playlists)
+        for artist_id, artist_data in current_batch:
+            artist_name = artist_data.get('name', f'Artist_{artist_id}')
+            raw_genres = artist_data['genres']  # These are already normalized from the fix
             
-            # Also collect tracks by normalized genre for potential new playlists
-            if norm_genre not in genre_tracks:
-                genre_tracks[norm_genre] = set()
-            genre_tracks[norm_genre].update(artist_tracks)
-        
-        if not playlists_to_update:
-            print(f"   ⚠️  No matching playlists found for normalized genres: {', '.join(all_normalized_genres)}")
-            continue
-        
-        print(f"   📋 Found {len(playlists_to_update)} matching playlists")
-        
-        # Update each matching playlist
-        for playlist_id in playlists_to_update:
-            try:
-                # Get playlist name for display
-                playlist_name = next(
-                    (name for name, pid in existing_playlists.items() if pid == playlist_id),
-                    f"Playlist_{playlist_id}"
-                )
+            # Get tracks for this artist from the original playlist
+            artist_tracks = original_artist_tracks[artist_id]
+            
+            print(f"\n🎤 Processing: {artist_name}")
+            print(f"   Fixed genres: {', '.join(raw_genres)}")
+            print(f"   Tracks in original playlist: {len(artist_tracks)}")
+            
+            # Normalize all genres first (for playlist matching)
+            all_normalized_genres = set()
+            for raw_genre in raw_genres:
+                normalized_genres = normalize_genre(raw_genre)
+                all_normalized_genres.update(normalized_genres)
+            
+            print(f"   Normalized for playlists: {', '.join(all_normalized_genres)}")
+            
+            # Find matching playlists for each normalized genre
+            playlists_to_update = set()
+            for norm_genre in all_normalized_genres:
+                matching_playlists = find_matching_playlists(norm_genre, existing_playlists)
+                playlists_to_update.update(matching_playlists)
                 
-                # Get existing tracks in playlist
-                existing_tracks = get_playlist_track_ids(playlist_id)
-                
-                # Filter out tracks that already exist
-                new_tracks = [track_id for track_id in artist_tracks if track_id not in existing_tracks]
-                
-                if new_tracks:
-                    print(f"   ➕ Adding {len(new_tracks)} tracks to '{playlist_name}'")
-                    
-                    # Add tracks in batches of 50
-                    for i in range(0, len(new_tracks), 50):
-                        batch = new_tracks[i:i + 50]
-                        sp.playlist_add_items(playlist_id, batch)
-                        rate_limiter.wait()
-                    
-                    total_updates += len(new_tracks)
-                    playlists_updated.add(playlist_id)
-                else:
-                    print(f"   ✅ All tracks already in '{playlist_name}'")
-                
-            except Exception as e:
-                print(f"   ❌ Error updating playlist {playlist_id}: {str(e)}")
+                # Also collect tracks by normalized genre for potential new playlists
+                if norm_genre not in genre_tracks:
+                    genre_tracks[norm_genre] = set()
+                genre_tracks[norm_genre].update(artist_tracks)
+            
+            if not playlists_to_update:
+                print(f"   ⚠️  No matching playlists found for normalized genres: {', '.join(all_normalized_genres)}")
                 continue
+            
+            print(f"   📋 Found {len(playlists_to_update)} matching playlists")
+            
+            # Update each matching playlist
+            for playlist_id in playlists_to_update:
+                try:
+                    # Get playlist name for display
+                    playlist_name = next(
+                        (name for name, pid in existing_playlists.items() if pid == playlist_id),
+                        f"Playlist_{playlist_id}"
+                    )
+                    
+                    # Get existing tracks in playlist with rate limiting
+                    rate_limiter.wait()
+                    existing_tracks = get_playlist_track_ids(playlist_id)
+                    
+                    # Filter out tracks that already exist
+                    new_tracks = [track_id for track_id in artist_tracks if track_id not in existing_tracks]
+                    
+                    if new_tracks:
+                        print(f"   ➕ Adding {len(new_tracks)} tracks to '{playlist_name}'")
+                        
+                        # Add tracks in batches of 50
+                        for i in range(0, len(new_tracks), 50):
+                            batch = new_tracks[i:i + 50]
+                            rate_limiter.wait()
+                            sp.playlist_add_items(playlist_id, batch)
+                        
+                        total_updates += len(new_tracks)
+                        playlists_updated.add(playlist_id)
+                    else:
+                        print(f"   ✅ All tracks already in '{playlist_name}'")
+                    
+                except Exception as e:
+                    print(f"   ❌ Error updating playlist {playlist_id}: {str(e)}")
+                    continue
+            
+            artists_processed += 1
         
-        artists_processed += 1
+        # Pause between batches to avoid overwhelming the API
+        if batch_end < len(artists_list):
+            print(f"\n⏸️  Pausing {pause_between_batches} seconds between batches...")
+            time.sleep(pause_between_batches)
         
-        # Progress update every 10 artists
-        if artists_processed % 10 == 0:
-            print(f"\n📈 Progress: {artists_processed}/{len(artists_with_genres)} artists processed")
-            print(f"📈 Total tracks added: {total_updates}")
+        # Progress update after each batch
+        print(f"\n📈 Progress: {artists_processed}/{len(artists_with_genres)} artists processed")
+        print(f"📈 Total tracks added: {total_updates}")
     
     # Check for genres that could create new playlists (100+ tracks threshold)
     print("\n" + "=" * 60)

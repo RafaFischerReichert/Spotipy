@@ -50,14 +50,17 @@ def get_playlist_tracks(playlist_id: str) -> List[Dict[str, Any]]:
     
     for attempt in range(max_retries):
         try:
+            # Apply rate limiting before the initial request
+            rate_limiter.wait()
+            
             # Use maximum limit to reduce pagination requests
             results: Dict[str, Any] = sp.playlist_tracks(playlist_id, limit=100)
             tracks.extend(results['items'])
             
             while results['next']:
+                rate_limiter.wait()
                 results = sp.next(results)
                 tracks.extend(results['items'])
-                rate_limiter.wait()
             
             return tracks
         except Exception as e:
