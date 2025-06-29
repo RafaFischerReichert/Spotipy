@@ -221,10 +221,10 @@ def get_track_genres(track: Dict[str, Any], artist_cache: Optional[Dict[str, Dic
         if not any(g.lower() == 'japanese music' for g in all_genres):
             all_genres.add('Japanese Music')
     if is_scandinavian:
-        # Check if any of the track's genres normalize to 'metal'
-        is_metal = any('metal' in normalize_genre(g) for g in all_genres)
+        # Check if any of the track's genres normalize to 'Metal'
+        is_metal = any('metal' in normalize_genre(g).lower() for g in all_genres)
         if is_metal:
-            all_genres.add('scandinavian metal')
+            all_genres.add('Scandinavian Metal')
     
     return list(all_genres)
 
@@ -248,13 +248,6 @@ def normalize_genre(genre: str) -> List[str]:
     genre_lower = genre.lower()
     result = set()  # Using set to automatically handle duplicates
     
-    # For Brazilian and Japanese, always add the title-case version
-    if genre_lower == 'brazilian music':
-        result.add('Brazilian Music')
-    if genre_lower == 'japanese music':
-        result.add('Japanese Music')
-        result.add('Anime + Japanese Music')
-    
     # Define genre mappings
     genre_mappings = {
         'brazilian music': ['brazilian'],
@@ -262,32 +255,45 @@ def normalize_genre(genre: str) -> List[str]:
         'emo': ['emo'],
         'rap and hip hop': ['rap', 'hip hop', 'hip-hop'],
         'folk': ['folk'],
-        'punk': ['punk'],
         'industrial': ['industrial'],
         'indie and alternative': ['alternative', 'indie', 'alt'],
         'rock': ['rock', 'hardcore', 'grunge', 'metal'],
+        'punk': ['punk'],
         'glam': ['glam'],
         'country': ['country'],
         'sertanejo': ['sertanejo'],
         'mpb': ['mpb'],
         '(Rhythm and )Blues': ['blues', 'r&b', 'rhythm and blues'],
         'Japanese Music': ['kei', 'japanese music', 'kayokyoku', 'j-pop', 'shibuya-kei', 'j-rock', 'anime', 'japanese indie', 'j-rap', 'vocaloid'],
-        'comedy': ['comedy', 'meme']
+        'comedy': ['comedy', 'meme'],
     }
     
-    # Check if this genre matches any of our mappings
+    # Special cases (these should remove the original genre)
+    special_cases = {
+        'electropop': ['electro-pop', 'electro pop'],
+        'anime': ['anime rap'],
+        'electro and edm': ['electronica', 'edm'],
+        'hardcore': ['hardcore punk'],
+        'drum and bass': ['bass music'],
+        'mpb': ['música popular brasileira']
+    }
+    
+    # Check if this genre matches any special cases first
+    for special_key, special_values in special_cases.items():
+        if any(special_value.lower() in genre_lower for special_value in special_values):
+            result.add(special_key.title())
+            return list(result)
+    
+    # Check if this genre matches any of our normal genre mappings
     is_special_case = False
     for mapping_key, mapping_values in genre_mappings.items():
         if any(mapping_value.lower() in genre_lower for mapping_value in mapping_values):
             is_special_case = True
             # Add the mapping key to results
-            if mapping_key not in ['(Rhythm and )Blues', 'Japanese Music']:
+            if mapping_key not in ['(Rhythm and )Blues']:
                 result.add(mapping_key.title())
             elif mapping_key == '(Rhythm and )Blues':
                 result.add('Blues')
-            elif mapping_key == 'Japanese Music':
-                result.add('Japanese Music')
-                result.add('Anime + Japanese Music')
             break
     
     # If no special mapping found, add the original genre (cleaned)
