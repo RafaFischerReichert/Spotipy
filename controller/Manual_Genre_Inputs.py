@@ -8,7 +8,7 @@ updates the cache.
 import json
 import os
 from typing import Dict, List, Set, Optional, Any
-from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_genres, normalize_genre, deduplicate_hyphen_genres, get_artist_name_from_cache
+from model.Genre_Tools import load_artist_cache, save_artist_cache, get_artist_genres, normalize_genre, deduplicate_hyphen_genres, get_artist_name_from_cache
 
 def get_artists_without_genres(artist_cache: Dict[str, Dict[str, Any]]) -> List[str]:
     """Get list of artist IDs that have no genres or only have generic regional genres in cache.

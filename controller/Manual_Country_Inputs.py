@@ -5,7 +5,7 @@ artists in the cache. Updates the cache with user-provided country data for
 each artist.
 """
 
-from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_name_from_cache
+from model.Genre_Tools import load_artist_cache, save_artist_cache, get_artist_name_from_cache
 
 def prompt_and_update_countries():
     """Prompt the user to manually input country information for artists without countries."""

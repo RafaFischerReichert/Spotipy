@@ -1,7 +1,7 @@
 """Backs up all playlists and their track IDs to a JSON file for recovery or analysis.
 """
 import json
-from Playlist_Tools import get_existing_playlists, get_playlist_track_ids
+from model.Playlist_Tools import get_existing_playlists, get_playlist_track_ids
 
 BACKUP_FILE = "playlists_backup.json"
 

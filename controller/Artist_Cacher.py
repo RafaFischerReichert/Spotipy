@@ -7,14 +7,14 @@ for use by other scripts.
 """
 
 from typing import Dict, List, Set, Any
-from spotify_client import sp, get_tracks_batch, get_artists_batch
-from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_genres, normalize_genre, deduplicate_hyphen_genres
-from Playlist_Tools import get_playlist_track_ids, RateLimiter, format_time
+from model.spotify_client import sp, get_tracks_batch, get_artists_batch
+from model.Genre_Tools import load_artist_cache, save_artist_cache, get_artist_genres, normalize_genre, deduplicate_hyphen_genres
+from model.Playlist_Tools import get_playlist_track_ids, RateLimiter, format_time
 import time
-from config import PLAYLIST_ID, REQUESTS_PER_SECOND
+from model.config import PLAYLIST_ID, REQUESTS_PER_SECOND
 from datetime import timedelta
 from tqdm import tqdm
-from WikipediaAPI import get_artist_country_wikidata, get_artist_genres as get_wikipedia_genres
+from model.WikipediaAPI import get_artist_country_wikidata, get_artist_genres as get_wikipedia_genres
 
 def cache_artist_genres(playlist_id: str) -> None:
     """Cache genres for all artists in a playlist.
@@ -188,6 +188,20 @@ def cache_artist_genres(playlist_id: str) -> None:
     print(f"   - New artists cached: {cache_misses}")
     print(f"   - Total time: {format_time(elapsed_time)}")
     print(f"   - Average time per artist: {elapsed_time/total_artists:.2f} seconds")
+
+def main(playlist_id: str = None):
+    """Main function to cache artist genres.
+    
+    Args:
+        playlist_id: The Spotify playlist ID to cache artists from. If None, uses PLAYLIST_ID from config.
+    """
+    # Use provided playlist_id or fall back to config
+    if playlist_id is None:
+        playlist_id = PLAYLIST_ID
+    
+    print("🎵 Artist Cacher")
+    print("=" * 60)
+    cache_artist_genres(playlist_id)
 
 if __name__ == "__main__":
     cache_artist_genres(PLAYLIST_ID)

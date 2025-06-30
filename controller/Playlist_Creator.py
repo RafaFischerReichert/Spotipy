@@ -7,8 +7,8 @@ creation by batching and checking for existing playlists.
 
 import time
 from typing import Dict, List, Set, Any
-from config import PLAYLIST_ID, REQUESTS_PER_SECOND
-from Playlist_Tools import (
+from model.config import PLAYLIST_ID, REQUESTS_PER_SECOND
+from model.Playlist_Tools import (
     get_existing_playlists,
     get_playlist_track_ids,
     create_genre_playlists,

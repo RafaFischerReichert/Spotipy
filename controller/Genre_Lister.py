@@ -6,14 +6,15 @@ unique genres found.
 """
 
 from typing import Dict, List, Set, Any
-from config import REQUESTS_PER_SECOND
-from Playlist_Tools import (
+from model.config import REQUESTS_PER_SECOND
+from model.Playlist_Tools import (
     get_playlist_tracks,
     get_track_genres,
     sp,
     RateLimiter
 )
-from Genre_Tools import load_artist_cache, normalize_genre
+from model.Genre_Tools import load_artist_cache, normalize_genre
+from model.config import PLAYLIST_ID
 
 def list_playlist_genres(playlist_id: str) -> None:
     """List all unique genres found in a playlist with optimized batch processing.
@@ -59,5 +60,4 @@ def list_playlist_genres(playlist_id: str) -> None:
     print(f"\nTotal unique genres: {len(unique_normalized_genres)}")
 
 if __name__ == "__main__":
-    from config import PLAYLIST_ID
     list_playlist_genres(PLAYLIST_ID)

@@ -13,9 +13,9 @@ This script allows you to:
 """
 
 from typing import Dict, List, Any
-from Artist_Genres import load_custom_genres, save_custom_genres, search_artist_by_name
-from Genre_Tools import get_artist_name_from_cache, load_artist_cache, normalize_genre
-from spotify_client import sp
+from model.Artist_Genres import load_custom_genres, save_custom_genres, search_artist_by_name
+from model.Genre_Tools import get_artist_name_from_cache, load_artist_cache, normalize_genre
+from model.spotify_client import sp
 
 def get_artist_by_id(artist_id: str) -> Dict[str, Any]:
     """Get artist details by ID, using cache when possible.

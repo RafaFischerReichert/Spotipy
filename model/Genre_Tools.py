@@ -10,9 +10,9 @@ import json
 import os
 import re
 from typing import Dict, List, Set, Optional, Any
-from spotify_client import sp, get_artist_with_retry, get_artists_batch
-from Artist_Genres import get_custom_artist_genres
-from WikipediaAPI import get_artist_country_wikidata
+from model.spotify_client import sp, get_artist_with_retry, get_artists_batch
+from model.Artist_Genres import get_custom_artist_genres
+from model.WikipediaAPI import get_artist_country_wikidata
 
 # Cache file paths
 ARTIST_CACHE_FILE = "artist_genre_cache.json"

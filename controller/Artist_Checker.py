@@ -7,10 +7,10 @@ and entering genres manually if missing.
 
 import re
 from typing import Dict, List, Any
-from Playlist_Tools import sp
-from spotify_client import get_artist_with_retry
-from Genre_Tools import load_artist_cache, save_artist_cache, get_artist_name_from_cache
-from Artist_Genres import search_artist_by_name, extract_artist_id_from_url
+from model.Playlist_Tools import sp
+from model.spotify_client import get_artist_with_retry
+from model.Genre_Tools import load_artist_cache, save_artist_cache, get_artist_name_from_cache
+from model.Artist_Genres import search_artist_by_name, extract_artist_id_from_url
 
 # Cache file path
 ARTIST_CACHE_FILE = "artist_genre_cache.json"

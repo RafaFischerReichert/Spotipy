@@ -8,8 +8,8 @@ cache or custom genres.
 import json
 import re
 import time
-from WikipediaAPI import get_artist_genres
-from Genre_Tools import normalize_genre
+from model.WikipediaAPI import get_artist_genres
+from model.Genre_Tools import normalize_genre
 
 def extract_artist_names_from_json(filename):
     """Extract artist names from the artists_without_genres.json file.

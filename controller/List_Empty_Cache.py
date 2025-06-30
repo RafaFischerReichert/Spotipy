@@ -7,9 +7,9 @@ for manual or automated genre assignment.
 
 from typing import Dict, Any
 import json
-from Playlist_Tools import sp
-from spotify_client import get_artist_with_retry
-from Genre_Tools import load_artist_cache, get_artist_name_from_cache
+from model.Playlist_Tools import sp
+from model.spotify_client import get_artist_with_retry
+from model.Genre_Tools import load_artist_cache, get_artist_name_from_cache
 
 # Cache file path
 ARTIST_CACHE_FILE = "artist_genre_cache.json"

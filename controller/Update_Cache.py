@@ -7,14 +7,14 @@ saves the updated cache.
 
 import time
 from typing import Dict, Any
-from spotify_client import sp, get_artist_with_retry
-from Genre_Tools import load_artist_cache, save_artist_cache, get_custom_artist_genres, normalize_genre, deduplicate_hyphen_genres
+from model.spotify_client import sp, get_artist_with_retry
+from model.Genre_Tools import load_artist_cache, save_artist_cache, get_custom_artist_genres, normalize_genre, deduplicate_hyphen_genres
 from tqdm import tqdm
-from WikipediaAPI import get_artist_genres as get_wikipedia_genres, get_artist_country_wikidata
+from model.WikipediaAPI import get_artist_genres as get_wikipedia_genres, get_artist_country_wikidata
 
 BATCH_SIZE = 50
 
-if __name__ == "__main__":
+def main():
     print("Updating all artists in the cache...")
     artist_cache: Dict[str, Dict[str, Any]] = load_artist_cache()
     artist_ids = list(artist_cache.keys())

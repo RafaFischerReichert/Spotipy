@@ -6,12 +6,35 @@ Used by most scripts for efficient playlist and track management.
 """
 
 import time
+import re
 from typing import Dict, List, Set, Any
-from config import REQUESTS_PER_SECOND
-from spotify_client import sp, get_artists_batch, get_tracks_batch
-from Genre_Tools import get_track_genres, load_artist_cache, save_artist_cache, normalize_genre, get_artist_genres
+from model.config import REQUESTS_PER_SECOND
+from model.spotify_client import sp, get_artists_batch, get_tracks_batch
+from model.Genre_Tools import get_track_genres, load_artist_cache, save_artist_cache, normalize_genre, get_artist_genres
 from collections import defaultdict
-from WikipediaAPI import get_artist_country_wikidata
+from model.WikipediaAPI import get_artist_country_wikidata
+from model.Artist_Genres import get_custom_artist_genres
+
+def extract_playlist_id_from_url(url: str) -> str:
+    """Extract playlist ID from a Spotify playlist URL.
+    
+    Args:
+        url: Spotify playlist URL (e.g., https://open.spotify.com/playlist/4GQhO4MTpS8iDanLQ4vcKW?si=a500f459aba34f74)
+        
+    Returns:
+        The playlist ID (e.g., 4GQhO4MTpS8iDanLQ4vcKW)
+        
+    Raises:
+        ValueError: If the URL format is invalid or playlist ID cannot be extracted
+    """
+    # Pattern to match playlist ID in Spotify URL
+    pattern = r'playlist/([a-zA-Z0-9]+)'
+    match = re.search(pattern, url)
+    
+    if match:
+        return match.group(1)
+    else:
+        raise ValueError("Invalid Spotify playlist URL format. Expected format: https://open.spotify.com/playlist/PLAYLIST_ID")
 
 class RateLimiter:
     """Rate limiter for API requests to respect rate limits.
@@ -197,7 +220,6 @@ def create_genre_playlists(playlist_id: str) -> None:
                         genres = artist['genres']
                         
                         # Add custom genres if available
-                        from Artist_Genres import get_custom_artist_genres
                         custom_genres = get_custom_artist_genres(artist_id)
                         genres.extend(custom_genres)
                         

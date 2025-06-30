@@ -7,15 +7,16 @@ percentage and count for each genre.
 
 from collections import defaultdict
 from typing import Dict, List, Any, Set
-from config import REQUESTS_PER_SECOND
-from Playlist_Tools import (
+from model.config import REQUESTS_PER_SECOND
+from model.Playlist_Tools import (
     get_playlist_tracks,
     get_track_genres,
     sp,
     RateLimiter
 )
-from Genre_Tools import load_artist_cache, get_custom_artist_genres, normalize_genre
-from WikipediaAPI import get_artist_country_wikidata
+from model.Genre_Tools import load_artist_cache, get_custom_artist_genres, normalize_genre
+from model.WikipediaAPI import get_artist_country_wikidata
+from model.config import PLAYLIST_ID
 
 
 def rank_playlist_genres(playlist_id: str) -> None:
@@ -128,5 +129,4 @@ def rank_playlist_genres(playlist_id: str) -> None:
     print(f"\nTotal unique genres: {len(genre_counts)}")
 
 if __name__ == "__main__":
-    from config import PLAYLIST_ID
     rank_playlist_genres(PLAYLIST_ID) 

@@ -9,7 +9,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import time
 from typing import Dict, Any, List
-from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
+from model.config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 
 # Initialize Spotify client
 sp: spotipy.Spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(

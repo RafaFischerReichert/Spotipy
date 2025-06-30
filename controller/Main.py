@@ -13,8 +13,9 @@ from config import PLAYLIST_ID, REQUESTS_PER_SECOND
 
 # Import all necessary modules
 from Playlist_Creator import create_genre_playlists_optimized
-from Genre_Tools import load_artist_cache
-from Artist_Genres import load_custom_genres
+from model.Genre_Tools import load_artist_cache
+from model.Artist_Genres import load_custom_genres
+from model.Playlist_Tools import get_existing_playlists
 
 def create_genre_playlists() -> bool:
     """Create genre playlists from the source playlist.
@@ -65,7 +66,6 @@ def print_summary():
     
     # Playlist stats
     try:
-        from Playlist_Tools import get_existing_playlists
         existing_playlists = get_existing_playlists()
         genre_playlists = [name for name in existing_playlists.keys() if any(genre in name.lower() for genre in ['rock', 'pop', 'hip hop', 'metal', 'jazz', 'classical', 'electronic', 'folk', 'country', 'r&b', 'blues', 'reggae', 'punk', 'indie', 'alternative', 'brazilian', 'japanese'])]
         print(f"📊 Playlists:")

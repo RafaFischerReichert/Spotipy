@@ -9,6 +9,7 @@ import json
 import os
 import re
 from typing import List, Dict, Any
+from model.spotify_client import sp
 
 # Custom genres file path
 CUSTOM_GENRES_FILE = "custom_artist_genres.json"
@@ -83,7 +84,6 @@ def search_artist_by_name(artist_name: str) -> List[Dict[str, Any]]:
     Returns:
         List of artist data dictionaries from Spotify search results.
     """
-    from spotify_client import sp
     try:
         results = sp.search(q=artist_name, type='artist', limit=10)
         return results['artists']['items']

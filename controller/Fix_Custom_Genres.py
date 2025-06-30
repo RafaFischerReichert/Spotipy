@@ -12,11 +12,11 @@ This script:
 
 import time
 from typing import Dict, List, Set, Any
-from config import REQUESTS_PER_SECOND, PLAYLIST_ID
-from spotify_client import sp
-from Playlist_Tools import get_existing_playlists, get_playlist_track_ids, RateLimiter, get_playlist_tracks, find_matching_playlists
-from Genre_Tools import normalize_genre, load_artist_cache, save_artist_cache, deduplicate_hyphen_genres
-from Artist_Genres import load_custom_genres, save_custom_genres
+from model.config import REQUESTS_PER_SECOND, PLAYLIST_ID
+from model.spotify_client import sp
+from model.Playlist_Tools import get_existing_playlists, get_playlist_track_ids, RateLimiter, get_playlist_tracks, find_matching_playlists
+from model.Genre_Tools import normalize_genre, load_artist_cache, save_artist_cache, deduplicate_hyphen_genres
+from model.Artist_Genres import load_custom_genres, save_custom_genres
 
 def fix_custom_genres() -> Dict[str, Dict[str, Any]]:
     """Fix existing custom genres by normalizing them using the same logic as other scripts.
@@ -114,10 +114,11 @@ def update_artist_cache_with_fixed_genres(fixed_genres: Dict[str, Dict[str, Any]
     
     print("✅ Updated artist cache with fixed custom genres")
 
-def get_original_playlist_tracks_by_artist(rate_limiter: RateLimiter) -> Dict[str, List[str]]:
+def get_original_playlist_tracks_by_artist(playlist_id: str, rate_limiter: RateLimiter) -> Dict[str, List[str]]:
     """Get all tracks from the original playlist, grouped by artist ID.
     
     Args:
+        playlist_id: The Spotify playlist ID to analyze.
         rate_limiter: Rate limiter instance for API calls.
     
     Returns:
@@ -129,7 +130,7 @@ def get_original_playlist_tracks_by_artist(rate_limiter: RateLimiter) -> Dict[st
     rate_limiter.wait()
     
     # Get all tracks from the original playlist
-    tracks = get_playlist_tracks(PLAYLIST_ID)
+    tracks = get_playlist_tracks(playlist_id)
     
     # Group tracks by artist
     artist_tracks: Dict[str, List[str]] = {}
@@ -186,21 +187,22 @@ def create_new_playlist(playlist_name: str, track_ids: List[str], rate_limiter: 
         print(f"   ❌ Error creating playlist '{playlist_name}': {str(e)}")
         return False
 
-def redo_playlist_additions(fixed_genres: Dict[str, Dict[str, Any]]) -> None:
+def redo_playlist_additions(playlist_id: str, fixed_genres: Dict[str, Dict[str, Any]]) -> None:
     """Redo playlist additions with the fixed custom genres.
     
     Args:
+        playlist_id: The Spotify playlist ID to analyze.
         fixed_genres: Dictionary of fixed custom genres to use for playlist creation.
     """
     print("\n🎵 Redoing playlist additions with fixed custom genres...")
-    print(f"📋 Working with original playlist: {PLAYLIST_ID}")
+    print(f"📋 Working with original playlist: {playlist_id}")
     
     # Initialize rate limiter with more conservative settings
     # Use 2 requests per second instead of 3 to be safer
     rate_limiter = RateLimiter(requests_per_second=2.0)
     
     # Get tracks from original playlist, grouped by artist
-    original_artist_tracks = get_original_playlist_tracks_by_artist(rate_limiter)
+    original_artist_tracks = get_original_playlist_tracks_by_artist(playlist_id, rate_limiter)
     
     # Get existing playlists with rate limiting
     rate_limiter.wait()
@@ -354,8 +356,16 @@ def redo_playlist_additions(fixed_genres: Dict[str, Dict[str, Any]]) -> None:
     print(f"🆕 New playlists created: {new_playlists_created}")
     print("✅ Custom genre fix and playlist redo completed!")
 
-def main():
-    """Main function to fix custom genres and redo playlist additions"""
+def main(playlist_id: str = None):
+    """Main function to fix custom genres and redo playlist additions
+    
+    Args:
+        playlist_id: The Spotify playlist ID to analyze. If None, uses PLAYLIST_ID from config.
+    """
+    # Use provided playlist_id or fall back to config
+    if playlist_id is None:
+        playlist_id = PLAYLIST_ID
+    
     print("🔧 Custom Genre Fixer and Playlist Redo")
     print("=" * 60)
     
@@ -373,7 +383,7 @@ def main():
         update_artist_cache_with_fixed_genres(fixed_genres)
         
         # Step 3: Redo playlist additions with fixed data
-        redo_playlist_additions(fixed_genres)
+        redo_playlist_additions(playlist_id, fixed_genres)
         
         elapsed_time = time.time() - start_time
         print(f"\n⏱️  Total execution time: {elapsed_time:.2f} seconds")
