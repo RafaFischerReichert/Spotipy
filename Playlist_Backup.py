@@ -15,7 +15,7 @@ def backup_all_playlists():
         track_ids = list(get_playlist_track_ids(pid))
         backup[name] = {"id": pid, "track_ids": track_ids}
     with open(BACKUP_FILE, "w", encoding="utf-8") as f:
-        json.dump(backup, f, indent=2)
+        json.dump(backup, f, indent=2, ensure_ascii=False)
     print(f"Backup complete: {len(backup)} playlists saved.")
 
 if __name__ == "__main__":

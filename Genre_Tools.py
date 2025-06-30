@@ -40,8 +40,8 @@ def save_artist_cache(cache: Dict[str, Dict[str, Any]]) -> None:
     Args:
         cache: Dictionary mapping artist IDs to their cached data.
     """
-    with open(ARTIST_CACHE_FILE, 'w') as f:
-        json.dump(cache, f)
+    with open(ARTIST_CACHE_FILE, 'w', encoding='utf-8') as f:
+        json.dump(cache, f, ensure_ascii=False, indent=2)
 
 def get_artist_name_from_cache(artist_id: str, artist_cache: Optional[Dict[str, Dict[str, Any]]] = None) -> str:
     """Get artist name from cache, falling back to Spotify API if not cached.

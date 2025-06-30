@@ -20,7 +20,7 @@ def fix_artist_cache():
         return
     
     print("Loading current artist cache...")
-    with open(cache_file, 'r') as f:
+    with open(cache_file, 'r', encoding='utf-8') as f:
         artist_cache = json.load(f)
     
     print(f"Loaded {len(artist_cache)} artists from cache")
@@ -47,8 +47,8 @@ def fix_artist_cache():
     if fixed_count > 0:
         # Save the updated cache
         print("Saving updated artist cache...")
-        with open(cache_file, 'w') as f:
-            json.dump(artist_cache, f)
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            json.dump(artist_cache, f, ensure_ascii=False, indent=2)
         print("Artist cache updated successfully!")
         
         # Show some examples of fixed artists
@@ -69,7 +69,7 @@ def show_cache_stats():
         print(f"Cache file {cache_file} not found!")
         return
     
-    with open(cache_file, 'r') as f:
+    with open(cache_file, 'r', encoding='utf-8') as f:
         artist_cache = json.load(f)
     
     total_artists = len(artist_cache)
