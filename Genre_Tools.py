@@ -275,7 +275,8 @@ def normalize_genre(genre: str) -> List[str]:
         'electro and edm': ['electronica', 'edm'],
         'hardcore': ['hardcore punk'],
         'drum and bass': ['bass music'],
-        'mpb': ['música popular brasileira']
+        'mpb': ['música popular brasileira'],
+        'comedy': ['parody', 'satire']
     }
     
     # Check if this genre matches any special cases first
