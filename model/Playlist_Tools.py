@@ -240,18 +240,14 @@ def format_time(seconds: float) -> str:
 def find_matching_playlists(genre: str, existing_playlists: Dict[str, str]) -> List[str]:
     """Find playlists that match a given genre exactly"""
     matching_playlists = []
-    normalized_genres = normalize_genre(genre)
-    
+    normalized_genres = normalize_genre(genre) if isinstance(genre, str) else []
     for playlist_name, playlist_id in existing_playlists.items():
         playlist_name_lower = playlist_name.lower()
-        
         # Check for exact matches with normalized genres
         for norm_genre in normalized_genres:
-            # Exact match: playlist name should exactly match the normalized genre
-            if playlist_name_lower == norm_genre.lower():
+            if isinstance(norm_genre, str) and playlist_name_lower == norm_genre.lower():
                 matching_playlists.append(playlist_id)
                 break
-    
     return matching_playlists
 
 def get_playlist_genre(playlist_name: str) -> str:

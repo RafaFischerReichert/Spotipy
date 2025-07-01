@@ -222,7 +222,10 @@ def get_track_genres(track: Dict[str, Any], artist_cache: Optional[Dict[str, Dic
             all_genres.add('Japanese Music')
     if is_scandinavian:
         # Check if any of the track's genres normalize to 'Metal'
-        is_metal = any('metal' in normalize_genre(g).lower() for g in all_genres)
+        is_metal = any(
+            any('metal' in norm_g.lower() for norm_g in normalize_genre(g))
+            for g in all_genres
+        )
         if is_metal:
             all_genres.add('Scandinavian Metal')
     
