@@ -292,10 +292,7 @@ def normalize_genre(genre: str) -> List[str]:
         if any(mapping_value.lower() in genre_lower for mapping_value in mapping_values):
             is_mapped = True
             # Add the mapping key to results (while keeping original)
-            if mapping_key not in ['(Rhythm and )Blues']:
-                result.add(mapping_key.title())
-            elif mapping_key == '(Rhythm and )Blues':
-                result.add('Blues')
+            result.add(mapping_key.title())
     
     # Always add the original genre (cleaned)
     if genre:

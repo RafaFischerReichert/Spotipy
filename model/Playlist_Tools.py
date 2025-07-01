@@ -182,86 +182,28 @@ def get_artists_batch(artist_ids: List[str], batch_size: int = 50) -> List[Dict]
     
     return all_artists
 
-def create_genre_playlists(playlist_id: str) -> None:
-    """Create genre playlists with optimized batch processing and caching"""
-    # Initialize rate limiter
+def create_genre_playlists(playlist_id: str, progress_callback=None) -> Dict[str, Set[str]]:
+    """Create genre playlists using only the current cache (read-only mode)."""
     rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
-    
-    # Get all tracks from the source playlist
     tracks: List[Dict[str, Any]] = get_playlist_tracks(playlist_id)
-    
-    # Group tracks by genre using sets to prevent duplicates
     genre_tracks: Dict[str, Set[str]] = defaultdict(set)
-    
-    # Load artist cache
     artist_cache: Dict[str, Dict[str, Any]] = load_artist_cache()
-    
-    # Extract all unique artist IDs from tracks
-    all_artist_ids: Set[str] = set()
-    for track in tracks:
-        if track['track']:
-            for artist in track['track']['artists']:
-                all_artist_ids.add(artist['id'])
-    
-    # Batch fetch uncached artists
-    uncached_artist_ids = [aid for aid in all_artist_ids if aid not in artist_cache]
-    if uncached_artist_ids:
-        print(f"Fetching {len(uncached_artist_ids)} uncached artists in batches...")
-        
-        for i in range(0, len(uncached_artist_ids), 50):
-            batch_artist_ids = uncached_artist_ids[i:i + 50]
-            try:
-                artists = sp.artists(batch_artist_ids)
-                
-                for artist in artists['artists']:
-                    if artist:  # Check if artist exists
-                        artist_id = artist['id']
-                        artist_name = artist['name']
-                        genres = artist['genres']
-                        
-                        # Add custom genres if available
-                        custom_genres = get_custom_artist_genres(artist_id)
-                        genres.extend(custom_genres)
-                        
-                        # Get country from Wikipedia/Wikidata
-                        country = get_artist_country_wikidata(artist_name)
-                        
-                        # Add national level genres based on Wikipedia country
-                        if country:
-                            if 'Brazil' in country:
-                                genres.append('brazilian music')
-                            elif 'Japan' in country:
-                                genres.append('Japanese Music')
-                        
-                        # Update cache with name, genres, and country
-                        artist_cache[artist_id] = {
-                            'name': artist_name,
-                            'genres': genres,
-                            'country': country
-                        }
-                
-                rate_limiter.wait()
-                
-            except Exception as e:
-                print(f"Error getting batch of artists: {str(e)}")
-                # Fallback to individual requests
-                for artist_id in batch_artist_ids:
-                    try:
-                        genres = get_artist_genres(artist_id, artist_cache)
-                        rate_limiter.wait()
-                    except Exception as e2:
-                        print(f"Error getting artist {artist_id}: {str(e2)}")
-                        continue
-    
-    # Process tracks in batches for better performance
-    print(f"Processing {len(tracks)} tracks with pre-loaded artist cache...")
-    
-    # Use optimized batch processing
-    genre_tracks = process_tracks_batch_optimized(tracks, artist_cache, batch_size=100)
-    
-    # Save final cache state
-    save_artist_cache(artist_cache)
-    
+    total_tracks = len(tracks)
+    batch_size = 100
+    for i in range(0, total_tracks, batch_size):
+        batch = tracks[i:i + batch_size]
+        for track in batch:
+            if track['track']:
+                track_id = track['track']['id']
+                # Only use cache, skip if any artist is not cached
+                artist_ids = [artist['id'] for artist in track['track']['artists']]
+                if any(aid not in artist_cache for aid in artist_ids):
+                    continue
+                track_genres = get_track_genres(track, artist_cache)
+                for genre in track_genres:
+                    genre_tracks[genre].add(track_id)
+        if progress_callback:
+            progress_callback(min(i + batch_size, total_tracks), total_tracks)
     return genre_tracks
 
 def process_tracks_batch_optimized(tracks: List[Dict[str, Any]], artist_cache: Dict[str, Dict[str, Any]], batch_size: int = 100) -> Dict[str, Set[str]]:

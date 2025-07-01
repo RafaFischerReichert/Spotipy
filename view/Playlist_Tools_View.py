@@ -12,8 +12,16 @@ playlist_id = st.session_state.get('playlist_id')
 if playlist_id:
     st.info(f'🎵 Working with playlist ID: {playlist_id}')
     
+    # Cancel button logic
+    if 'cancel_playlist_creation' not in st.session_state:
+        st.session_state.cancel_playlist_creation = False
+    if st.button('Cancel Playlist Creation'):
+        st.session_state.cancel_playlist_creation = True
+        st.warning('Playlist creation will be cancelled at the next opportunity.')
+    
     # Create Genre Playlists
     if st.button('Create Genre Playlists'):
+        st.session_state.cancel_playlist_creation = False
         try:
             Playlist_Creator.create_genre_playlists_optimized(playlist_id)
             st.success('Genre playlists created!')
