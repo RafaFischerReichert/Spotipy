@@ -3,7 +3,7 @@
 import json
 from model.Playlist_Tools import get_existing_playlists, get_playlist_track_ids
 
-BACKUP_FILE = "playlists_backup.json"
+BACKUP_FILE = "data/playlists_backup.json"
 
 def backup_all_playlists():
     """Back up all playlists and their track IDs to a JSON file."""

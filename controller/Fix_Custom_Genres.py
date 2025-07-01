@@ -18,7 +18,7 @@ from model.Playlist_Tools import get_existing_playlists, get_playlist_track_ids,
 from model.Genre_Tools import normalize_genre, load_artist_cache, save_artist_cache, deduplicate_hyphen_genres
 from model.Artist_Genres import load_custom_genres, save_custom_genres
 
-def fix_custom_genres() -> Dict[str, Dict[str, Any]]:
+def fix_custom_genres(progress_callback=None) -> Dict[str, Dict[str, Any]]:
     """Fix existing custom genres by normalizing them using the same logic as other scripts.
     
     Returns:
@@ -37,7 +37,7 @@ def fix_custom_genres() -> Dict[str, Dict[str, Any]]:
     fixed_genres = {}
     total_fixed = 0
     
-    for artist_id, artist_data in custom_genres.items():
+    for idx, (artist_id, artist_data) in enumerate(custom_genres.items()):
         if isinstance(artist_data, dict) and 'genres' in artist_data:
             raw_genres = artist_data['genres']
             artist_name = artist_data.get('name', f'Artist_{artist_id}')
@@ -74,16 +74,19 @@ def fix_custom_genres() -> Dict[str, Dict[str, Any]]:
         else:
             # Keep as is if not in expected format
             fixed_genres[artist_id] = artist_data
+        
+        if progress_callback:
+            progress_callback((idx + 1) / len(custom_genres))
     
     print(f"✅ Fixed genres for {total_fixed} artists")
     
     # Save fixed genres back to file
     save_custom_genres(fixed_genres)
-    print("💾 Saved fixed custom genres to custom_artist_genres.json")
+    print("💾 Saved fixed custom genres to data/custom_artist_genres.json")
     
     return fixed_genres
 
-def update_artist_cache_with_fixed_genres(fixed_genres: Dict[str, Dict[str, Any]]) -> None:
+def update_artist_cache_with_fixed_genres(fixed_genres: Dict[str, Dict[str, Any]], progress_callback=None) -> None:
     """Update the artist cache with the fixed custom genres.
     
     Args:
@@ -95,7 +98,7 @@ def update_artist_cache_with_fixed_genres(fixed_genres: Dict[str, Dict[str, Any]
     artist_cache = load_artist_cache()
     
     # Update cache with fixed genres
-    for artist_id, fixed_data in fixed_genres.items():
+    for idx, (artist_id, fixed_data) in enumerate(fixed_genres.items()):
         custom_genre_list = fixed_data['genres']
         
         if artist_id in artist_cache:
@@ -108,6 +111,9 @@ def update_artist_cache_with_fixed_genres(fixed_genres: Dict[str, Dict[str, Any]
                 'genres': custom_genre_list,
                 'country': None
             }
+        
+        if progress_callback:
+            progress_callback((idx + 1) / len(fixed_genres))
     
     # Save updated cache
     save_artist_cache(artist_cache)
@@ -187,7 +193,7 @@ def create_new_playlist(playlist_name: str, track_ids: List[str], rate_limiter: 
         print(f"   ❌ Error creating playlist '{playlist_name}': {str(e)}")
         return False
 
-def redo_playlist_additions(playlist_id: str, fixed_genres: Dict[str, Dict[str, Any]]) -> None:
+def redo_playlist_additions(playlist_id: str, fixed_genres: Dict[str, Dict[str, Any]], progress_callback=None) -> None:
     """Redo playlist additions with the fixed custom genres.
     
     Args:
@@ -234,7 +240,7 @@ def redo_playlist_additions(playlist_id: str, fixed_genres: Dict[str, Dict[str, 
     # Convert to list for batch processing
     artists_list = list(artists_with_genres.items())
     
-    for batch_start in range(0, len(artists_list), batch_size):
+    for idx, batch_start in enumerate(range(0, len(artists_list), batch_size)):
         batch_end = min(batch_start + batch_size, len(artists_list))
         current_batch = artists_list[batch_start:batch_end]
         
@@ -319,8 +325,8 @@ def redo_playlist_additions(playlist_id: str, fixed_genres: Dict[str, Dict[str, 
             time.sleep(pause_between_batches)
         
         # Progress update after each batch
-        print(f"\n📈 Progress: {artists_processed}/{len(artists_with_genres)} artists processed")
-        print(f"📈 Total tracks added: {total_updates}")
+        if progress_callback:
+            progress_callback((batch_start + batch_size) / len(artists_list))
     
     # Check for genres that could create new playlists (100+ tracks threshold)
     print("\n" + "=" * 60)
@@ -356,7 +362,7 @@ def redo_playlist_additions(playlist_id: str, fixed_genres: Dict[str, Dict[str, 
     print(f"🆕 New playlists created: {new_playlists_created}")
     print("✅ Custom genre fix and playlist redo completed!")
 
-def main(playlist_id: str = None):
+def main(playlist_id: str = None, progress_callback=None):
     """Main function to fix custom genres and redo playlist additions
     
     Args:
@@ -366,31 +372,31 @@ def main(playlist_id: str = None):
     if playlist_id is None:
         playlist_id = PLAYLIST_ID
     
-    print("🔧 Custom Genre Fixer and Playlist Redo")
+    print("\U0001F527 Custom Genre Fixer and Playlist Redo")
     print("=" * 60)
     
     start_time = time.time()
     
     try:
         # Step 1: Fix existing custom genres
-        fixed_genres = fix_custom_genres()
+        fixed_genres = fix_custom_genres(progress_callback=progress_callback)
         
         if not fixed_genres:
-            print("❌ No custom genres to fix. Exiting.")
+            print("\u274c No custom genres to fix. Exiting.")
             return
         
         # Step 2: Update artist cache with fixed genres
-        update_artist_cache_with_fixed_genres(fixed_genres)
+        update_artist_cache_with_fixed_genres(fixed_genres, progress_callback=progress_callback)
         
         # Step 3: Redo playlist additions with fixed data
-        redo_playlist_additions(playlist_id, fixed_genres)
+        redo_playlist_additions(playlist_id, fixed_genres, progress_callback=progress_callback)
         
         elapsed_time = time.time() - start_time
-        print(f"\n⏱️  Total execution time: {elapsed_time:.2f} seconds")
-        print("🎉 Fix and redo process completed successfully!")
+        print(f"\n\u23f1\ufe0f  Total execution time: {elapsed_time:.2f} seconds")
+        print("\U0001F389 Fix and redo process completed successfully!")
         
     except Exception as e:
-        print(f"\n❌ Error during fix and redo process: {str(e)}")
+        print(f"\n\u274c Error during fix and redo process: {str(e)}")
 
 if __name__ == "__main__":
     main() 

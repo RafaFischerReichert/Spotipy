@@ -13,7 +13,7 @@ from model.Genre_Tools import load_artist_cache, save_artist_cache, get_artist_n
 from model.Artist_Genres import search_artist_by_name, extract_artist_id_from_url
 
 # Cache file path
-ARTIST_CACHE_FILE = "artist_genre_cache.json"
+ARTIST_CACHE_FILE = "data/artist_genre_cache.json"
 
 def update_tracks_for_artist(artist_id: str, artist_genres: List[str], cache: Dict[str, Dict[str, Any]]) -> None:
     """Update the cache for an artist with their genres.

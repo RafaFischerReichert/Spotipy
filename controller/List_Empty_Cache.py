@@ -12,7 +12,7 @@ from model.spotify_client import get_artist_with_retry
 from model.Genre_Tools import load_artist_cache, get_artist_name_from_cache
 
 # Cache file path
-ARTIST_CACHE_FILE = "artist_genre_cache.json"
+ARTIST_CACHE_FILE = "data/artist_genre_cache.json"
 
 def list_artists_without_genres():
     """List all artists that have no genres and save to JSON format."""
@@ -97,9 +97,9 @@ def save_artists_to_json(artists_data: Dict[str, Dict[str, Any]]):
     Args:
         artists_data: Dictionary of artist data to save.
     """
-    with open('artists_without_genres.json', 'w', encoding='utf-8') as f:
+    with open('data/artists_without_genres.json', 'w', encoding='utf-8') as f:
         json.dump(artists_data, f, indent=2, ensure_ascii=False)
-    print(f"Saved {len(artists_data)} artists to artists_without_genres.json")
+    print(f"Saved {len(artists_data)} artists to data/artists_without_genres.json")
 
 def save_artists_to_text(artists_data: Dict[str, Dict[str, Any]]):
     """Save artists data to text file in the original format for backward compatibility.

@@ -62,7 +62,7 @@ class RateLimiter:
         self.last_request_time = time.time()
 
 # Cache file path
-ARTIST_CACHE_FILE = "artist_genre_cache.json"
+ARTIST_CACHE_FILE = "data/artist_genre_cache.json"
 
 def get_playlist_tracks(playlist_id: str) -> List[Dict[str, Any]]:
     """Get all tracks from a playlist, handling pagination with optimized batch size"""

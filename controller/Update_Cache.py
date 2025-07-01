@@ -6,7 +6,13 @@ saves the updated cache.
 """
 
 import time
+import sys
+import os
 from typing import Dict, Any
+
+# Add the parent directory to the Python path so we can import from model
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from model.spotify_client import sp, get_artist_with_retry
 from model.Genre_Tools import load_artist_cache, save_artist_cache, get_custom_artist_genres, normalize_genre, deduplicate_hyphen_genres
 from tqdm import tqdm
@@ -14,7 +20,7 @@ from model.WikipediaAPI import get_artist_genres as get_wikipedia_genres, get_ar
 
 BATCH_SIZE = 50
 
-def main():
+def main(progress_callback=None):
     print("Updating all artists in the cache...")
     artist_cache: Dict[str, Dict[str, Any]] = load_artist_cache()
     artist_ids = list(artist_cache.keys())
@@ -61,6 +67,8 @@ def main():
                         'country': country
                     }
                     updated_count += 1
+            if progress_callback:
+                progress_callback(min(i + BATCH_SIZE, total_artists) / total_artists)
             time.sleep(0.1)
         except Exception as e:
             print(f"Error updating batch {i//BATCH_SIZE+1}: {str(e)}")
@@ -104,4 +112,7 @@ def main():
 
     save_artist_cache(artist_cache)
     elapsed = time.time() - start_time
-    print(f"\nUpdated {updated_count} artists in {elapsed:.1f} seconds") 
+    print(f"\nUpdated {updated_count} artists in {elapsed:.1f} seconds")
+
+if __name__ == "__main__":
+    main() 

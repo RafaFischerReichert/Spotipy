@@ -15,7 +15,7 @@ from model.Artist_Genres import get_custom_artist_genres
 from model.WikipediaAPI import get_artist_country_wikidata
 
 # Cache file paths
-ARTIST_CACHE_FILE = "artist_genre_cache.json"
+ARTIST_CACHE_FILE = "data/artist_genre_cache.json"
 
 def load_artist_cache() -> Dict[str, Dict[str, Any]]:
     """Load the artist cache from file if it exists.
@@ -248,7 +248,7 @@ def normalize_genre(genre: str) -> List[str]:
     genre_lower = genre.lower()
     result = set()  # Using set to automatically handle duplicates
     
-    # Define genre mappings
+    # Define genre mappings - add mapped genres while keeping originals
     genre_mappings = {
         'brazilian music': ['brazilian'],
         'metal': ['metal', 'djent'],
@@ -270,6 +270,7 @@ def normalize_genre(genre: str) -> List[str]:
     
     # Special cases (these should remove the original genre)
     special_cases = {
+        'hip hop': ['hip-hop'],
         'electropop': ['electro-pop', 'electro pop'],
         'anime': ['anime rap'],
         'electro and edm': ['electronica', 'edm'],
@@ -279,31 +280,26 @@ def normalize_genre(genre: str) -> List[str]:
         'comedy': ['parody', 'satire']
     }
     
-    # Check if this genre matches any special cases first
+    # Check if this genre matches any special cases first (replace original)
     for special_key, special_values in special_cases.items():
         if any(special_value.lower() in genre_lower for special_value in special_values):
             result.add(special_key.title())
             return list(result)
     
-    # Check if this genre matches any of our normal genre mappings
-    is_special_case = False
+    # Check if this genre matches any of our normal genre mappings (add mapped genre while keeping original)
+    is_mapped = False
     for mapping_key, mapping_values in genre_mappings.items():
         if any(mapping_value.lower() in genre_lower for mapping_value in mapping_values):
-            is_special_case = True
-            # Add the mapping key to results
+            is_mapped = True
+            # Add the mapping key to results (while keeping original)
             if mapping_key not in ['(Rhythm and )Blues']:
                 result.add(mapping_key.title())
             elif mapping_key == '(Rhythm and )Blues':
                 result.add('Blues')
-            break
     
-    # If no special mapping found, add the original genre (cleaned)
-    if not is_special_case and genre:
+    # Always add the original genre (cleaned)
+    if genre:
         result.add(genre.title())
-    
-    # For special cases, ensure the original genre is removed
-    if is_special_case and genre in result:
-        result.remove(genre)
     
     return list(result)
 

@@ -16,7 +16,7 @@ from datetime import timedelta
 from tqdm import tqdm
 from model.WikipediaAPI import get_artist_country_wikidata, get_artist_genres as get_wikipedia_genres
 
-def cache_artist_genres(playlist_id: str) -> None:
+def cache_artist_genres(playlist_id: str, progress_callback=None) -> None:
     """Cache genres for all artists in a playlist.
     
     Uses existing cache and updates it with new artist data.
@@ -24,6 +24,7 @@ def cache_artist_genres(playlist_id: str) -> None:
     
     Args:
         playlist_id: The Spotify playlist ID to cache artists from.
+        progress_callback: Optional callback function to report progress.
     """
     # Initialize rate limiter using config value
     rate_limiter = RateLimiter(requests_per_second=REQUESTS_PER_SECOND)
@@ -81,12 +82,13 @@ def cache_artist_genres(playlist_id: str) -> None:
     print(f"Artists to fetch: {len(uncached_artist_ids)}")
     
     # Cache genres for uncached artists using batch requests
+    batch_size = 50
+    total_batches = len(uncached_artist_ids)
     if uncached_artist_ids:
         print("\nCaching artist genres using batch requests...")
         
-        # Process artists in batches of 50
-        for i in tqdm(range(0, len(uncached_artist_ids), 50), desc="Caching artist batches"):
-            batch_artist_ids = uncached_artist_ids[i:i + 50]
+        for i in tqdm(range(0, len(uncached_artist_ids), batch_size), desc="Caching artist batches"):
+            batch_artist_ids = uncached_artist_ids[i:i + batch_size]
             try:
                 artists = sp.artists(batch_artist_ids)
                 
@@ -138,6 +140,9 @@ def cache_artist_genres(playlist_id: str) -> None:
                     print(f"Time elapsed: {format_time(elapsed_time)}")
                     print(f"Estimated time remaining: {format_time(remaining_time)}")
                     
+                if progress_callback:
+                    progress_callback(min(i + batch_size, total_batches) / total_batches)
+                
             except Exception as e:
                 print(f"\nError getting batch of artists: {str(e)}")
                 # Fallback to individual requests for failed batch
@@ -189,19 +194,20 @@ def cache_artist_genres(playlist_id: str) -> None:
     print(f"   - Total time: {format_time(elapsed_time)}")
     print(f"   - Average time per artist: {elapsed_time/total_artists:.2f} seconds")
 
-def main(playlist_id: str = None):
+def main(playlist_id: str = None, progress_callback=None):
     """Main function to cache artist genres.
     
     Args:
         playlist_id: The Spotify playlist ID to cache artists from. If None, uses PLAYLIST_ID from config.
+        progress_callback: Optional callback function to report progress.
     """
     # Use provided playlist_id or fall back to config
     if playlist_id is None:
         playlist_id = PLAYLIST_ID
     
-    print("🎵 Artist Cacher")
+    print("\U0001F3B5 Artist Cacher")
     print("=" * 60)
-    cache_artist_genres(playlist_id)
+    cache_artist_genres(playlist_id, progress_callback=progress_callback)
 
 if __name__ == "__main__":
     cache_artist_genres(PLAYLIST_ID)

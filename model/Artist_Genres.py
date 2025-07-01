@@ -12,7 +12,7 @@ from typing import List, Dict, Any
 from model.spotify_client import sp
 
 # Custom genres file path
-CUSTOM_GENRES_FILE = "custom_artist_genres.json"
+CUSTOM_GENRES_FILE = "data/custom_artist_genres.json"
 
 def load_custom_genres() -> Dict[str, Dict[str, Any]]:
     """Load custom artist genres from JSON file.

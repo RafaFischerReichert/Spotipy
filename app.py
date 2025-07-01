@@ -9,7 +9,7 @@ st.title('Spotipy Control Panel')
 
 # Import the URL extraction function
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'model')))
-from Playlist_Tools import extract_playlist_id_from_url
+from model.Playlist_Tools import extract_playlist_id_from_url
 
 # Navigation state
 if 'main_view' not in st.session_state:
@@ -19,7 +19,7 @@ if 'main_view' not in st.session_state:
 st.header('Playlist Configuration')
 playlist_url = st.text_input(
     'Enter Spotify Playlist URL',
-    placeholder='https://open.spotify.com/playlist/4GQhO4MTpS8iDanLQ4vcKW?si=a500f459aba34f74',
+    placeholder='https://open.spotify.com/playlist/YOUR_ID_GOES_HERE?si=YOUR_UNIQUE_ID',
     help='Paste the full Spotify playlist URL here'
 )
 

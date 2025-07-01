@@ -57,7 +57,7 @@ def print_summary():
     print(f"   - Artists without genres: {artists_without_genres}")
     
     # Custom genres stats
-    if os.path.exists('custom_artist_genres.json'):
+    if os.path.exists('data/custom_artist_genres.json'):
         custom_genres = load_custom_genres()
         artists_with_custom_genres = sum(1 for data in custom_genres.values() if data.get('genres'))
         print(f"📊 Custom Genres:")

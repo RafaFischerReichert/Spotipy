@@ -133,8 +133,8 @@ def save_results_to_json(results, filename):
 def main():
     """Main function to process artists and fetch their genres from Wikipedia."""
     # Extract artist names from the JSON file
-    print("Extracting artist names from artists_without_genres.json...")
-    artists = extract_artist_names_from_json('artists_without_genres.json')
+    print("Extracting artist names from data/artists_without_genres.json...")
+    artists = extract_artist_names_from_json('data/artists_without_genres.json')
     
     print(f"Found {len(artists)} artists")
     
@@ -142,7 +142,7 @@ def main():
     results = get_genres_for_artists(artists)
     
     # Save results to custom genres JSON file
-    save_results_to_json(results, 'custom_artist_genres.json')
+    save_results_to_json(results, 'data/custom_artist_genres.json')
     
     # Print summary
     artists_with_genres = sum(1 for data in results.values() if data.get('genres'))
