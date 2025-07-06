@@ -273,7 +273,7 @@ def normalize_genre(genre: str) -> List[str]:
     
     # Special cases (these should remove the original genre)
     special_cases = {
-        'hip hop': ['hip-hop'],
+        'hip hop': ['Hip-Hop'],
         'electropop': ['electro-pop', 'electro pop'],
         'anime': ['anime rap'],
         'electro and edm': ['electronica', 'edm'],

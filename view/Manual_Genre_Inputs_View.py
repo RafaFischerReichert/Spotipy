@@ -46,13 +46,13 @@ if idx < len(artists):
             st.session_state.processed += 1
             st.session_state.current_index += 1
             st.success(f"Saved genres: {', '.join(unique_genres)}")
-            st.experimental_rerun()
+            st.rerun()
     with col2:
         if st.button("Skip", key=f"skip_{idx}"):
             st.session_state.skipped += 1
             st.session_state.current_index += 1
             st.info("Skipped.")
-            st.experimental_rerun()
+            st.rerun()
     st.write(f"Progress: {idx+1} / {len(artists)}")
 else:
     st.success(f"All artists processed! Processed: {st.session_state.processed}, Skipped: {st.session_state.skipped}") 

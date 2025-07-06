@@ -73,7 +73,7 @@ if st.session_state.main_view == 'menu':
 elif st.session_state.main_view == 'playlist':
     if st.button('Back to Main Menu'):
         st.session_state.main_view = 'menu'
-        st.experimental_rerun()
+        st.rerun()
     else:
         spec = importlib.util.spec_from_file_location('Playlist_Tools_View', os.path.join('view', 'Playlist_Tools_View.py'))
         Playlist_Tools_View = importlib.util.module_from_spec(spec)
@@ -82,7 +82,7 @@ elif st.session_state.main_view == 'playlist':
 elif st.session_state.main_view == 'cache':
     if st.button('Back to Main Menu'):
         st.session_state.main_view = 'menu'
-        st.experimental_rerun()
+        st.rerun()
     else:
         spec = importlib.util.spec_from_file_location('Cache_Manip_View', os.path.join('view', 'Cache_Manip_View.py'))
         Cache_Manip_View = importlib.util.module_from_spec(spec)
@@ -91,7 +91,7 @@ elif st.session_state.main_view == 'cache':
 elif st.session_state.main_view == 'artist_checker':
     if st.button('Back to Main Menu'):
         st.session_state.main_view = 'menu'
-        st.experimental_rerun()
+        st.rerun()
     else:
         spec = importlib.util.spec_from_file_location('Artist_Checker_View', os.path.join('view', 'Artist_Checker_View.py'))
         Artist_Checker_View = importlib.util.module_from_spec(spec)

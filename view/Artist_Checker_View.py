@@ -36,7 +36,7 @@ def show_artist_genres(artist_id, cache):
                 if manual_genres:
                     update_tracks_for_artist(artist_id, manual_genres, cache)
                     st.success(f"Added manual genres: {', '.join(manual_genres)}")
-                    st.experimental_rerun()
+                    st.rerun()
     except Exception as e:
         st.error(f"Error getting artist data: {str(e)}")
 
@@ -53,19 +53,19 @@ def artist_checker_view():
         with col1:
             if st.button('Check artist ID by name'):
                 st.session_state.artist_checker_menu = 'by_name'
-                st.experimental_rerun()
+                st.rerun()
         with col2:
             if st.button('Check artist genres by Spotify URL'):
                 st.session_state.artist_checker_menu = 'by_url'
-                st.experimental_rerun()
+                st.rerun()
         with col3:
             if st.button('Check artist genres by artist code (ID)'):
                 st.session_state.artist_checker_menu = 'by_id'
-                st.experimental_rerun()
+                st.rerun()
     elif st.session_state.artist_checker_menu == 'by_name':
         if st.button('Back to Menu'):
             st.session_state.artist_checker_menu = 'menu'
-            st.experimental_rerun()
+            st.rerun()
         artist_name = st.text_input('Enter artist name:')
         if st.button('Search by Name') and artist_name.strip():
             results = search_artist_by_name(artist_name.strip())
@@ -80,7 +80,7 @@ def artist_checker_view():
     elif st.session_state.artist_checker_menu == 'by_url':
         if st.button('Back to Menu'):
             st.session_state.artist_checker_menu = 'menu'
-            st.experimental_rerun()
+            st.rerun()
         url = st.text_input('Enter Spotify artist URL:')
         if st.button('Search by URL') and url.strip():
             try:
@@ -91,7 +91,7 @@ def artist_checker_view():
     elif st.session_state.artist_checker_menu == 'by_id':
         if st.button('Back to Menu'):
             st.session_state.artist_checker_menu = 'menu'
-            st.experimental_rerun()
+            st.rerun()
         artist_id = st.text_input('Enter Spotify artist ID:')
         if st.button('Search by ID') and artist_id.strip():
             show_artist_genres(artist_id.strip(), cache)

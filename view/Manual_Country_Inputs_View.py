@@ -34,13 +34,13 @@ if idx < len(artists):
                 st.session_state.country_processed += 1
                 st.session_state.country_index += 1
                 st.success(f"Saved country: {country_input}")
-                st.experimental_rerun()
+                st.rerun()
     with col2:
         if st.button("Skip", key=f"skip_country_{idx}"):
             st.session_state.country_skipped += 1
             st.session_state.country_index += 1
             st.info("Skipped.")
-            st.experimental_rerun()
+            st.rerun()
     st.write(f"Progress: {idx+1} / {len(artists)}")
 else:
     st.success(f"All artists processed! Processed: {st.session_state.country_processed}, Skipped: {st.session_state.country_skipped}") 
