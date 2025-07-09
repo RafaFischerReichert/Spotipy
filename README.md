@@ -33,16 +33,69 @@ Spotipy/
    *(Create a `requirements.txt` if not present, listing all needed packages such as `spotipy`, `requests`, etc.)*
 
 ## Usage
-Run the main application or any controller script directly:
+
+### Web Interface
+Run the main Streamlit application:
 ```bash
 python app.py
 ```
-Or, for specific tasks (e.g., creating a playlist):
+
+### Command Line Interface
+You can run individual scripts directly from the command line using Python's module system:
+
+#### Artist Caching & Management
 ```bash
-python controller/Playlist_Creator.py
+# Cache all artists from the configured playlist
+python -m controller.Artist_Cacher
+
+# Update existing cache with latest genre/country data
+python -m controller.Update_Cache
+
+# Check and manage individual artists
+python -m controller.Artist_Checker
+
+# List artists without genres
+python -m controller.List_Empty_Cache
 ```
 
-## Configuration
+#### Genre Management
+```bash
+# Add custom genres for artists
+python -m controller.Add_Custom_Genres
+
+# Manual genre input for artists without genres
+python -m controller.Manual_Genre_Inputs
+
+# Fix and normalize custom genres
+python -m controller.Fix_Custom_Genres
+
+# List and rank genres
+python -m controller.Genre_Lister
+python -m controller.Genre_Ranker
+```
+
+#### Playlist Operations
+```bash
+# Create genre-based playlists
+python -m controller.Playlist_Creator
+
+# Backup playlists
+python -m controller.Playlist_Backup
+
+# Manual country inputs for artists
+python -m controller.Manual_Country_Inputs
+```
+
+#### System & Maintenance
+```bash
+# Run the complete genre playlist creation process
+python -m controller.Main
+
+# Check Spotify API status
+python -m controller.check_api_status
+```
+
+### Configuration
 - Copy `model/config_template.py` to `config.py` and fill in your Spotify API credentials and other settings as needed.
 - Place `config.py` in the `model/` directory.
 
